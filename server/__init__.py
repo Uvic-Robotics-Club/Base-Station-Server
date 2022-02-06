@@ -1,4 +1,5 @@
 from flask import Flask
+from server import hotspot, rover
 import os
 
 def create_app(test_config=None):
@@ -18,9 +19,9 @@ def create_app(test_config=None):
     # A simple page that says hello
     @app.route('/')
     def root():
-        return 'Hello, World!2'
+        return {'status': 'success', 'message': 'Server is alive'}
 
-    from server import hotspot
     app.register_blueprint(hotspot.bp)
+    app.register_blueprint(rover.bp)
 
     return app

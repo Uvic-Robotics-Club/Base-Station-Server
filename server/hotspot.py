@@ -76,6 +76,32 @@ def get_current_active_connections():
     response['output'] = current_active_connections_list
     return response
 
+@bp.route('/status', methods=['GET'])
+def status():
+    '''
+    Returns the status of the WiFi hotspot.
+    '''
+    response = {'status': None}
+
+    # Assert WiFi hotspot is on before disconnecting
+    active_connections = get_current_active_connections()['output']
+    hotspot_active = False
+    hotspot_device = None
+    for connection in active_connections:
+        if connection['NAME'] == 'Hotspot':
+            hotspot_active = True
+            hotspot_device = connection['DEVICE']
+
+    if not hotspot_active:
+        response['status'] = 'success'
+        response['hotspot_active'] = False
+        return response
+
+    response['status'] = 'success'
+    response['hotspot_active'] = True
+    response['device'] = hotspot_device
+    return response
+
 @bp.route('/start', methods=['GET'])
 def start():
     '''
@@ -131,15 +157,8 @@ def stop():
     response = {'status': None}
 
     # Assert WiFi hotspot is on before disconnecting
-    active_connections = get_current_active_connections()['output']
-    hotspot_active = False
-    hotspot_device = None
-    for connection in active_connections:
-        if connection['NAME'] == 'Hotspot':
-            hotspot_active = True
-            hotspot_device = connection['DEVICE']
-
-    if not hotspot_active:
+    is_hotspot_active = status()['hotspot_active']
+    if not is_hotspot_active:
         response['status'] = 'No active hotspots found.'
         return response
 
