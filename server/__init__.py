@@ -1,5 +1,5 @@
 from flask import Flask
-from server import hotspot, rover
+from server import hotspot, rover, ui
 import os
 
 def create_app(test_config=None):
@@ -16,12 +16,13 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    # A simple page that says hello
+    # Ping page.
     @app.route('/')
     def root():
         return {'status': 'success', 'message': 'Server is alive'}
 
     app.register_blueprint(hotspot.bp)
     app.register_blueprint(rover.bp)
+    app.register_blueprint(ui.bp)
 
     return app
