@@ -1,6 +1,6 @@
 # This blueprint contains routes which are called by the UI. Routes include returning the current state, 
 # sending commands to the rover, and so on...
-from client import send_command
+from client import send_command, request_connection
 from flask import Blueprint, request
 from settings import Settings
 from state import State
@@ -9,6 +9,35 @@ from state import State
 bp = Blueprint('ui', __name__, url_prefix='/ui')
 state = State()
 settings = Settings()
+
+@bp.route('/request_connection', methods=['GET'])
+def request_connection():
+    '''
+    Sends HTTP request to specified remote address to request for it 
+    to connect to the base station.
+    '''
+    response = {'status': None}
+    args = dict(request.args)
+
+    # Validate remote adress parameter is present.
+    try:
+        assert 'remote_addr' in args, 'remote_attr parameter not provided.'
+    except AssertionError as err:
+        response['status'] = 'Malformed request'
+        response['message'] = str(err)
+        return response
+
+    # If connection already exists, fail.
+    if state.get_attribute('connection_established'):
+        response['status'] = 'failure'
+        response['message'] = 'Established connection exists. Disconnect first, then reconnect.'
+
+    result = request_connection(
+        remote_addr = args['remote_addr'],
+        timeout_sec = settings.get_setting('timeout_request_connection_sec')
+    )
+    
+    # TODO complete
 
 @bp.route('/send_command', methods=['POST'])
 def send_command():

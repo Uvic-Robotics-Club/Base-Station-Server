@@ -1,5 +1,6 @@
 {
     "command_types": {},
     "timeout_ping_sec": 5.0,
-    "timeout_send_command_sec": 5.0
+    "timeout_send_command_sec": 5.0,
+    "timeout_request_connection_sec": 5.0
 }
