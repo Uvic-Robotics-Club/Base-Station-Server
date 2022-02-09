@@ -33,7 +33,8 @@ def connect():
     state.set_attribute('connection_established', True)
 
     response['status'] = 'success'
-    response['message'] = 'Successfully established connection with ID: {}'.format(new_connection_id)
+    response['message'] = 'Successfully established connection.'
+    response['connection_id'] = new_connection_id
     return response
 
 @bp.route('/send_telemetry', methods=['POST'])
