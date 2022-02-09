@@ -23,6 +23,7 @@ class State(metaclass=Singleton):
             'connection_established': False,
             'connection_remote_addr': None,
             'connection_id': None,
+            'hotspot_active': False,
             'rover_telemetry': {}
         }
     

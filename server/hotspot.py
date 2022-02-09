@@ -1,9 +1,10 @@
 from flask import Blueprint, request
+from state import State
 import subprocess
 from .utils import assert_expected_keys_list, get_header_key_indexes
 
 bp = Blueprint('hotspot', __name__, url_prefix='/hotspot')
-
+state = State()
 
 @bp.route('/get_network_interfaces', methods=['GET'])
 def get_network_interfaces():
@@ -55,7 +56,13 @@ def get_current_active_connections():
         response['message'] = 'Return code: {}, Output: {}'.format(err.returncode, err.output)
         return response
 
+    # Get headers. If no headers are present, this means no connections currently active, and return empty list.
     headers = unparsed_output_by_line[0]
+    if len(headers) == 0:
+        response['status'] = 'success'
+        response['output'] = []
+        return response
+
     headers_keys = headers.split()
 
     # Assert header keys are expected output, and get key indexes to allow for correct parsing
@@ -92,6 +99,8 @@ def status():
             hotspot_active = True
             hotspot_device = connection['DEVICE']
 
+    # Update state as soon as most recent knowledge of hotspot available.
+    state.set_attribute('hotspot_active', hotspot_active)
     if not hotspot_active:
         response['status'] = 'success'
         response['hotspot_active'] = False
@@ -135,9 +144,17 @@ def start():
         response['message'] = str(err)
         return response
 
+    # If connection already exists, then fail.
+    if status()['hotspot_active']:
+        response['status'] = 'failure'
+        response['message'] = 'Cannot start new hotspot, another hotspot is active.'
+        return response
+
     try:
         command_to_execute = 'nmcli dev wifi hotspot ifname {} ssid {} password "{}"'
         output = str(subprocess.check_output(command_to_execute.format(args['ifname'], args['ssid'], args['password']), stderr=subprocess.STDOUT, shell=True))[11:].split('\\n')[0]
+        
+        state.set_attribute('hotspot_active', True)
     except subprocess.CalledProcessError as err:
         response['status'] = 'OS command exited with non-zero code'
         response['message'] = 'Return code: {}, Output: {}'.format(err.returncode, err.output)
@@ -157,14 +174,16 @@ def stop():
     response = {'status': None}
 
     # Assert WiFi hotspot is on before disconnecting
-    is_hotspot_active = status()['hotspot_active']
+    hotspot_status = status()
+    is_hotspot_active = hotspot_status['hotspot_active']
     if not is_hotspot_active:
         response['status'] = 'No active hotspots found.'
         return response
 
     # Disconnect hotspot.
     try:
-        output = str(subprocess.check_output('nmcli device disconnect {}'.format(hotspot_device), stderr=subprocess.STDOUT, shell=True))[2:]
+        output = str(subprocess.check_output('nmcli device disconnect {}'.format(hotspot_status['device']), stderr=subprocess.STDOUT, shell=True))[2:]
+        state.set_attribute('hotspot_active', False)
     except subprocess.CalledProcessError as err:
         response['status'] = 'OS command to stop hotspot'
         response['message'] = 'Return code: {}, Output: {}'.format(err.returncode, err.output)
