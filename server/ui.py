@@ -1,6 +1,6 @@
 # This blueprint contains routes which are called by the UI. Routes include returning the current state, 
 # sending commands to the rover, and so on...
-from client import send_command, request_connection
+from client import send_command, send_connection_request
 from flask import Blueprint, request
 from settings import Settings
 from state import State
@@ -32,8 +32,9 @@ def request_connection():
         response['status'] = 'failure'
         response['message'] = 'Established connection exists. Disconnect first, then reconnect.'
 
-    result = request_connection(
+    result = send_connection_request(
         remote_addr = args['remote_addr'],
+        port = settings.get_setting('port_rover_http'),
         timeout_sec = settings.get_setting('timeout_request_connection_sec')
     )
     
