@@ -2,6 +2,7 @@
 # sending commands to the rover, and so on...
 from client import send_command, send_connection_request
 from flask import Blueprint, request
+import requests
 from settings import Settings
 from state import State
 
@@ -32,13 +33,22 @@ def request_connection():
         response['status'] = 'failure'
         response['message'] = 'Established connection exists. Disconnect first, then reconnect.'
 
-    result = send_connection_request(
-        remote_addr = args['remote_addr'],
-        port = settings.get_setting('port_rover_http'),
-        timeout_sec = settings.get_setting('timeout_request_connection_sec')
-    )
+    try:
+        rover_response = send_connection_request(
+            remote_addr = args['remote_addr'],
+            port = settings.get_setting('port_rover_http'),
+            timeout_sec = settings.get_setting('timeout_request_connection_sec')
+        )
+    except requests.exception.Timeout as ex:
+        response['status'] = 'failure'
+        response['message'] = 'Request to rover timed out.'
+        return response
+    except AssertionError as err:
+        response['status'] = 'failure'
+        response['message'] = 'Response status code is not 200 OK.'
+        return response
     
-    # TODO complete
+    return rover_response.json()
 
 @bp.route('/send_command', methods=['POST'])
 def send_command():

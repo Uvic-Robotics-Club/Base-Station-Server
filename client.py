@@ -33,11 +33,11 @@ def send_connection_request(remote_addr, port, timeout_sec):
         response = requests.get(request_url, timeout=timeout_sec)
         assert response.status_code == 200
     except requests.exceptions.Timeout as ex:
-        return False, 'Timeout'
+        raise ex
     except AssertionError as err:
-        return False, 'Status code: {}'.format(response.status_code)
+        raise err
 
-    return True, 'Remote address successfully received command.'
+    return response
 
 def send_command(remote_addr, port, command, timeout_sec):
     '''
