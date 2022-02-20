@@ -1,6 +1,6 @@
 # This blueprint contains routes which are called by the UI. Routes include returning the current state, 
 # sending commands to the rover, and so on...
-from client import send_command, send_connection_request
+from client import send_command, send_connection_request, disconnect
 from flask import Blueprint, request
 import requests
 from settings import Settings
@@ -72,14 +72,23 @@ def send_command():
     # Validate command JSON
     json_data = request.get_json()
 
-    # Send command
-    result = send_command(
-        remote_addr = state.get_attribute('connection_remote_addr'), 
-        command = json_data,
-        timeout_sec = settings.get_setting('timeout_send_command_sec')
-        )
+    try:
+        # Send command
+        result = send_command(
+            remote_addr = state.get_attribute('connection_remote_addr'), 
+            command = json_data,
+            timeout_sec = settings.get_setting('timeout_send_command_sec')
+            )
+    except requests.exception.Timeout as ex:
+        response['status'] = 'failure'
+        response['message'] = 'Request to rover timed out.'
+        return response
+    except AssertionError as err:
+        response['status'] = 'failure'
+        response['message'] = 'Response status code is not 200 OK.'
+        return response
 
-    # TODO: Complete
+    return result.json()
 
 @bp.route('/get_rover_telemetry', methods=['GET'])
 def get_rover_telemetry():
@@ -99,6 +108,24 @@ def get_rover_telemetry():
     response['data'] = telemetry_data
     return response
 
+@bp.route('/disconnect', methods=['GET'])
+def disconnect():
+    '''
+    Disconnects base station from rover, if a connection exists.
+    '''
+    response = {'status': None}
+
+    # If no connection exists, return failure.
+    if not state.get_attribute('connection_established'):
+        response['status'] = 'failure'
+        response['message'] = 'No established connection, no connections to disconnect.'
+        return response        
+
+    result = disconnect(
+        remote_addr = state.get_attribute('connection_remote_addr'), 
+        port = state.get_attribute('port_rover_http'),
+        timeout_sec = settings.get_setting('timeout_send_command_sec')
+    )
 
 @bp.route('/scan_ip_addresses', methods=['GET'])
 def scan_ip_addresses():
@@ -106,5 +133,5 @@ def scan_ip_addresses():
     Scans the local network IP addresses.
     '''
     response = {'status': None}
-    # TODO
+    return response
 

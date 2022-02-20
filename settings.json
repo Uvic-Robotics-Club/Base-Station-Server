@@ -1,6 +1,6 @@
 {
     "command_types": {},
-    "port_rover_http": 5000,
+    "port_rover_http": 5001,
     "timeout_ping_sec": 5.0,
     "timeout_send_command_sec": 5.0,
     "timeout_request_connection_sec": 5.0

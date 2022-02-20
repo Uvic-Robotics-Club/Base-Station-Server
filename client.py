@@ -58,8 +58,29 @@ def send_command(remote_addr, port, command, timeout_sec):
         response = requests.post(request_url, json=command, timeout=timeout_sec)
         assert response.status_code == 200
     except requests.exceptions.Timeout as ex:
-        return False, 'Timeout'
+        raise ex
     except AssertionError as err:
-        return False, 'Status code: {}'.format(response.status_code)
+        raise err
 
-    return True, 'Remote address successfully received command.'
+    return response
+
+def disconnect(remote_addr, port, timeout_sec):
+    '''
+    Sends a GET HTTP request to the remote address indicating that the base station
+    is disconnecting from the rover. The rover will simply accept the disconnect request
+    and not send back another request.
+    '''
+    assert type(remote_addr) == str, 'Remote address must be of type string.'
+    assert type(port) == int, 'Port must be of type int.'
+    assert type(timeout_sec) in [int, float], 'Timeout must be of type int or float.'
+
+    try:
+        request_url = 'http://{}:{}/disconnect'.format(remote_addr, port)
+        response = requests.get(request_url, timeout=timeout_sec)
+        assert response.status_code == 200
+    except requests.exceptions.Timeout as ex:
+        raise ex
+    except AssertionError as err:
+        raise err
+
+    return response
