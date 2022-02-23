@@ -19,7 +19,7 @@ def create_app(test_config=None):
     # Ping page.
     @app.route('/')
     def root():
-        return {'status': 'success', 'message': 'Server is alive'}
+        return {'status': 'success', 'message': 'Base station server is alive'}
 
     app.register_blueprint(hotspot.bp)
     app.register_blueprint(rover.bp)
