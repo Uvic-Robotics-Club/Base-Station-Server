@@ -12,8 +12,8 @@ bp = Blueprint('api/rover', __name__, url_prefix='/api/rover')
 state = State()
 settings = Settings()
 
-@bp.route('/connect_rover', methods=['GET'])
-def connect_rover():
+@bp.route('/connect', methods=['GET'])
+def connect():
     '''
     Sends HTTP request to specified remote address to connect to
     base station.
@@ -38,8 +38,7 @@ def connect_rover():
     try:
         rover_response = client.connect(
             remote_addr = args['remote_addr'],
-            port = settings.get_setting('port_rover_http'),
-            timeout_sec = settings.get_setting('timeout_request_connection_sec')
+            port = settings.get_setting('port_rover_http')
         )
     except exceptions.NoConnectionException:
         response['status'] = 'failure'
@@ -78,12 +77,7 @@ def send_command():
 
     try:
         # Send command
-        response = client.send_command(
-            remote_addr = state.get_attribute('connection_remote_addr'), 
-            port = settings.get_setting('port_rover_http'),
-            command = json_data,
-            timeout_sec = settings.get_setting('timeout_send_command_sec')
-            )
+        response = client.send_command(command = json_data)
     except exceptions.NoConnectionException:
         response['status'] = 'failure'
         response['message'] = 'No established connection, unable to ping rover server.'
@@ -99,19 +93,15 @@ def send_command():
         
     return response.json()
 
-@bp.route('/get_rover_telemetry', methods=['GET'])
-def get_rover_telemetry():
+@bp.route('/get_telemetry', methods=['GET'])
+def get_telemetry():
     '''
     Gets telemetry from the rover, if a connection exists.
     '''
     response = {'status': None}
 
     try:
-        rover_response = client.get_rover_telemetry(
-            remote_addr = state.get_attribute('connection_remote_addr'),
-            port = settings.get_setting('port_rover_http'),
-            timeout_sec = settings.get_setting('timeout_request_connection_sec')
-        )
+        rover_response = client.get_telemetry()
     except exceptions.NoConnectionException:
         response['status'] = 'failure'
         response['message'] = 'No established connection, unable to ping rover server.'
@@ -151,8 +141,8 @@ def ping():
     
     return response.json()
 
-@bp.route('/disconnect_rover', methods=['GET'])
-def disconnect_rover():
+@bp.route('/disconnect', methods=['GET'])
+def disconnect():
     '''
     Disconnects base station from rover, if a connection exists.
     '''
@@ -166,11 +156,7 @@ def disconnect_rover():
 
     try:
         # Send request to rover
-        response = client.disconnect(
-            remote_addr = state.get_attribute('connection_remote_addr'), 
-            port = settings.get_setting('port_rover_http'),
-            timeout_sec = settings.get_setting('timeout_send_command_sec')
-        )
+        response = client.disconnect()
     except exceptions.NoConnectionException:
         response['status'] = 'failure'
         response['message'] = 'No established connection, unable to ping rover server.'
@@ -192,8 +178,8 @@ def disconnect_rover():
 
     return response.json()
 
-@bp.route('/force_disconnect_rover', methods=['GET'])
-def force_disconnect_rover():
+@bp.route('/force_disconnect', methods=['GET'])
+def force_disconnect():
     '''
     Terminates connection to rover from base station without waiting for
     response from rover. This would mainly be used if the rover cannot be 
@@ -210,11 +196,7 @@ def force_disconnect_rover():
     try:
         # Send request to rover, with short timeout. Ideally, would send
         # async request, but requests module does not have support currently.
-        client.disconnect(
-            remote_addr = state.get_attribute('connection_remote_addr'), 
-            port = settings.get_setting('port_rover_http'),
-            timeout_sec = 0.1 # 0.1 second timeout
-        )
+        client.disconnect()
     except requests.exceptions.Timeout as ex:
         pass
 

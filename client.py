@@ -10,28 +10,6 @@ REQUEST_TIMEOUT_SEC = 5.0
 state = State()
 settings = Settings()
 
-def ping():
-    '''
-    Sends a GET HTTP request to the remote address specified. If response has 
-    status code 200 (OK), returns success.
-    '''
-
-    # If no connection exists, return failure.
-    if not state.get_attribute('connection_established'):
-        raise NoConnectionException
-
-    try:
-        remote_addr = state.get_attribute('connection_remote_addr')
-        port = settings.get_setting('port_rover_http')
-        response = requests.get('http://{}:{}'.format(remote_addr, port), timeout=REQUEST_TIMEOUT_SEC)
-        assert response.status_code == 200
-    except requests.exceptions.Timeout as ex:
-        raise ex
-    except AssertionError as err:
-        raise err
-
-    return response
-
 def connect(remote_addr, port):
     '''
     Sends GET request to request for rover to connect to base station.
@@ -89,7 +67,7 @@ def send_command(command):
 
     return response
 
-def get_rover_telemetry():
+def get_telemetry():
     '''
     Sends a GET HTTP request to the rover to fetch the latest telemetry.
     '''
@@ -111,6 +89,27 @@ def get_rover_telemetry():
 
     return response
 
+def ping():
+    '''
+    Sends a GET HTTP request to the remote address specified. If response has 
+    status code 200 (OK), returns success.
+    '''
+
+    # If no connection exists, return failure.
+    if not state.get_attribute('connection_established'):
+        raise NoConnectionException
+
+    try:
+        remote_addr = state.get_attribute('connection_remote_addr')
+        port = settings.get_setting('port_rover_http')
+        response = requests.get('http://{}:{}'.format(remote_addr, port), timeout=REQUEST_TIMEOUT_SEC)
+        assert response.status_code == 200
+    except requests.exceptions.Timeout as ex:
+        raise ex
+    except AssertionError as err:
+        raise err
+
+    return response
 
 def disconnect():
     '''

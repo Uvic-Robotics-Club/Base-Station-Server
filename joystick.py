@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # This program will read the x and y axis data from a USB connected joystick and
 # convert that data into left/right speed values for the runt rover. 
 # This program then processes the left/right speed values and increments or decrements 
@@ -51,6 +52,15 @@ class Joystick():
             # Set initial speed before considering turning
             speedLeft = speedRight = y_axis
 
+            # TODO: This is for testing. Remove for production
+            # Prints all axis values such that different profiles can be created for different joysticks.
+            # num_axes = joystick.get_numaxes()
+            # print('Num axes: ', num_axes)
+            # for i in range(num_axes):
+            #    print('Axis {}: {}'.format(i, joystick.get_axis(i)))
+            # print('==============')
+
+
             if abs(x_axis) < X_AXIS_DEADZONE and abs(y_axis) < Y_AXIS_DEADZONE:
                 # Joystick is centred
                 if abs(z_axis) > Z_AXIS_DEADZONE:
@@ -82,7 +92,7 @@ class Joystick():
             
             if(speed_right < speed_right_setpoint):
                 speed_right+=1
-            elif(speed_right>speed_right_setpoint):
+            elif(speed_right > speed_right_setpoint):
                 speed_right-=1
 
 
@@ -91,9 +101,7 @@ class Joystick():
             write_speed_left = 0
             write_speed_right = 0
         
-            # reverse is 0
-            # forward is 1
-
+            # reverse is 0, forward is 1
             if(speed_left>0):
                 write_direction_left = 0
             else:
@@ -117,15 +125,16 @@ class Joystick():
             }
 
             try:
+                #print(command)
                 send_command(command)
             except exceptions.NoConnectionException:
-                # print('No connection, cannot send joystick position...')
+                print('No connection, cannot send joystick position...')
                 pass
             except requests.exceptions.Timeout:
-                # print('Timed out on request to send drive train command...')
+                print('Timed out on request to send drive train command...')
                 pass
             except AssertionError:
-                # print('Response code is not 200 OK')
+                print('Response code is not 200 OK')
                 pass
 
             time.sleep(SLEEP_DURATION_SEC)
@@ -145,3 +154,6 @@ class Joystick():
             new_range = new_max - new_min
             new_value = (((old_value - old_min) * new_range) / old_range) + new_min
         return new_value
+
+if __name__ == '__main__':
+    Joystick.control_drivetrain()
