@@ -1,36 +1,43 @@
 # This file contains methods to send network requests to the rover from the base station.
+from exceptions import NoConnectionException
 import requests
 from random import randrange
+from settings import Settings
 from state import State
 
-state = State()
+REQUEST_TIMEOUT_SEC = 5.0
 
-def ping(remote_addr, port, timeout_sec):
+state = State()
+settings = Settings()
+
+def ping():
     '''
     Sends a GET HTTP request to the remote address specified. If response has 
     status code 200 (OK), returns success.
     '''
-    assert type(remote_addr) == str, 'Remote address must be of type string.'
-    assert type(port) == int, 'Port must be of type int.'
-    assert type(timeout_sec) in [int, float], 'Timeout must be of type int or float.'
+
+    # If no connection exists, return failure.
+    if not state.get_attribute('connection_established'):
+        raise NoConnectionException
 
     try:
-        response = requests.get('http://{}:{}'.format(remote_addr, port), timeout=timeout_sec)
+        remote_addr = state.get_attribute('connection_remote_addr')
+        port = settings.get_setting('port_rover_http')
+        response = requests.get('http://{}:{}'.format(remote_addr, port), timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
     except requests.exceptions.Timeout as ex:
-        return False, 'Timeout'
+        raise ex
     except AssertionError as err:
-        return False, 'Status code: {}'.format(response.status_code)
+        raise err
 
-    return True, 'Remote address alive.'
+    return response
 
-def connect(remote_addr, port, timeout_sec):
+def connect(remote_addr, port):
     '''
     Sends GET request to request for rover to connect to base station.
     '''
     assert type(remote_addr) == str, 'Remote address must be of type string.'
     assert type(port) == int, 'Port must be of type int.'
-    assert type(timeout_sec) in [int, float], 'Timeout must be of type int or float.'
 
     # Generate new connection ID to indicate new connection.
     new_connection_id = randrange(100000000, 999999999)
@@ -38,7 +45,7 @@ def connect(remote_addr, port, timeout_sec):
     try:
         params = {'conn_id': new_connection_id}
         request_url = 'http://{}:{}/connect'.format(remote_addr, port)
-        response = requests.get(request_url, params=params, timeout=timeout_sec)
+        response = requests.get(request_url, params=params, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
     except requests.exceptions.Timeout as ex:
         raise ex
@@ -49,27 +56,31 @@ def connect(remote_addr, port, timeout_sec):
     new_connection_id = randrange(100000000, 999999999)
     state.set_attribute('connection_id', new_connection_id)
     state.set_attribute('connection_remote_addr', remote_addr)
+    state.set_attribute('connection_port', port)
     state.set_attribute('connection_established', True)
 
     return response
 
-def send_command(remote_addr, port, command, timeout_sec):
+def send_command(command):
     '''
     Sends a POST HTTP request to the remote address with a command to be processed
     by the rover. The command is a dictionary that is sent as JSON MIME Type.
     '''
-    assert type(remote_addr) == str, 'Remote address must be of type string.'
-    assert type(port) == int, 'Port must be of type int.'
     assert type(command) == dict, 'Command must be of type dict.'
-    assert type(timeout_sec) in [int, float], 'Timeout must be of type int or float.'
 
     # Validate that "type" key in command is specified.
     assert 'type' in command, 'Command must contain "type" key'
     assert type(command['type']) == str, 'Command type must be str type.'
 
+    # If no connection exists, return failure.
+    if not state.get_attribute('connection_established'):
+        raise NoConnectionException
+
     try:
+        remote_addr = state.get_attribute('connection_remote_addr')
+        port = settings.get_setting('port_rover_http')
         request_url = 'http://{}:{}/send_command'.format(remote_addr, port)
-        response = requests.post(request_url, json=command, timeout=timeout_sec)
+        response = requests.post(request_url, json=command, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
     except requests.exceptions.Timeout as ex:
         raise ex
@@ -78,19 +89,45 @@ def send_command(remote_addr, port, command, timeout_sec):
 
     return response
 
-def disconnect(remote_addr, port, timeout_sec):
+def get_rover_telemetry():
+    '''
+    Sends a GET HTTP request to the rover to fetch the latest telemetry.
+    '''
+
+    # If no connection exists, return failure.
+    if not state.get_attribute('connection_established'):
+        raise NoConnectionException
+
+    try:
+        remote_addr = state.get_attribute('connection_remote_addr')
+        port = settings.get_setting('port_rover_http')
+        request_url = 'http://{}:{}/get_rover_telemetry'.format(remote_addr, port)
+        response = requests.get(request_url, timeout=REQUEST_TIMEOUT_SEC)
+        assert response.status_code == 200
+    except requests.exceptions.Timeout as ex:
+        raise ex
+    except AssertionError as err:
+        raise err
+
+    return response
+
+
+def disconnect():
     '''
     Sends a GET HTTP request to the remote address indicating that the base station
     is disconnecting from the rover. The rover will simply accept the disconnect request
     and not send back another request past the response.
     '''
-    assert type(remote_addr) == str, 'Remote address must be of type string.'
-    assert type(port) == int, 'Port must be of type int.'
-    assert type(timeout_sec) in [int, float], 'Timeout must be of type int or float.'
+
+    # If no connection exists, return failure.
+    if not state.get_attribute('connection_established'):
+        raise NoConnectionException
 
     try:
+        remote_addr = state.get_attribute('connection_remote_addr')
+        port = settings.get_setting('port_rover_http')
         request_url = 'http://{}:{}/disconnect'.format(remote_addr, port)
-        response = requests.get(request_url, timeout=timeout_sec)
+        response = requests.get(request_url, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
     except requests.exceptions.Timeout as ex:
         raise ex

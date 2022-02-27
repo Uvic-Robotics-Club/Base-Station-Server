@@ -1,14 +1,14 @@
 # This blueprint contains routes which are called by the UI. Routes include returning the current state, 
 # sending commands to the rover, and so on...
-#from client import send_command, connect, disconnect
 import client
+import exceptions
 from flask import Blueprint, request
 import requests
 from settings import Settings
 from state import State
 
 
-bp = Blueprint('ui', __name__, url_prefix='/ui')
+bp = Blueprint('api/rover', __name__, url_prefix='/api/rover')
 state = State()
 settings = Settings()
 
@@ -41,11 +41,15 @@ def connect_rover():
             port = settings.get_setting('port_rover_http'),
             timeout_sec = settings.get_setting('timeout_request_connection_sec')
         )
-    except requests.exceptions.Timeout as ex:
+    except exceptions.NoConnectionException:
+        response['status'] = 'failure'
+        response['message'] = 'No established connection, unable to ping rover server.'
+        return response
+    except requests.exceptions.Timeout:
         response['status'] = 'failure'
         response['message'] = 'Request to rover timed out.'
         return response
-    except AssertionError as err:
+    except AssertionError:
         response['status'] = 'failure'
         response['message'] = 'Response status code is not 200 OK.'
         return response
@@ -65,12 +69,6 @@ def send_command():
         response['message'] = 'Request\'s MIME type is not application/json.'
         return response
 
-    # If no connection exists, return failure.
-    if not state.get_attribute('connection_established'):
-        response['status'] = 'failure'
-        response['message'] = 'No established connection, unable to send command.'
-        return response
-
     # Validate command JSON
     # NOTE: Handles GET for testing
     if request.method == 'POST':
@@ -80,22 +78,26 @@ def send_command():
 
     try:
         # Send command
-        result = client.send_command(
+        response = client.send_command(
             remote_addr = state.get_attribute('connection_remote_addr'), 
             port = settings.get_setting('port_rover_http'),
             command = json_data,
             timeout_sec = settings.get_setting('timeout_send_command_sec')
             )
-    except requests.exceptions.Timeout as ex:
+    except exceptions.NoConnectionException:
+        response['status'] = 'failure'
+        response['message'] = 'No established connection, unable to ping rover server.'
+        return response
+    except requests.exceptions.Timeout:
         response['status'] = 'failure'
         response['message'] = 'Request to rover timed out.'
         return response
-    except AssertionError as err:
+    except AssertionError:
         response['status'] = 'failure'
         response['message'] = 'Response status code is not 200 OK.'
         return response
         
-    return result.json()
+    return response.json()
 
 @bp.route('/get_rover_telemetry', methods=['GET'])
 def get_rover_telemetry():
@@ -104,16 +106,50 @@ def get_rover_telemetry():
     '''
     response = {'status': None}
 
-    # If no connection exists, return failure.
-    if not state.get_attribute('connection_established'):
+    try:
+        rover_response = client.get_rover_telemetry(
+            remote_addr = state.get_attribute('connection_remote_addr'),
+            port = settings.get_setting('port_rover_http'),
+            timeout_sec = settings.get_setting('timeout_request_connection_sec')
+        )
+    except exceptions.NoConnectionException:
         response['status'] = 'failure'
-        response['message'] = 'No established connection, unable to send command.'
+        response['message'] = 'No established connection, unable to ping rover server.'
         return response
+    except requests.exceptions.Timeout:
+        response['status'] = 'failure'
+        response['message'] = 'Request to rover timed out.'
+        return response
+    except AssertionError:
+        response['status'] = 'failure'
+        response['message'] = 'Response status code is not 200 OK.'
+        return response
+    
+    return rover_response.json()
 
-    telemetry_data = state.get_attribute('rover_telemetry')
-    response['status'] = 'success'
-    response['data'] = telemetry_data
-    return response
+@bp.route('/ping', methods=['GET'])
+def ping():
+    '''
+    Pings the rover to ensure that it is alive.
+    '''
+    response = {'status': None}
+
+    try:
+        response = client.ping()
+    except exceptions.NoConnectionException:
+        response['status'] = 'failure'
+        response['message'] = 'No established connection, unable to ping rover server.'
+        return response
+    except requests.exceptions.Timeout:
+        response['status'] = 'failure'
+        response['message'] = 'Request to rover timed out.'
+        return response
+    except AssertionError:
+        response['status'] = 'failure'
+        response['message'] = 'Response status code is not 200 OK.'
+        return response
+    
+    return response.json()
 
 @bp.route('/disconnect_rover', methods=['GET'])
 def disconnect_rover():
@@ -130,16 +166,20 @@ def disconnect_rover():
 
     try:
         # Send request to rover
-        result = client.disconnect(
+        response = client.disconnect(
             remote_addr = state.get_attribute('connection_remote_addr'), 
             port = settings.get_setting('port_rover_http'),
             timeout_sec = settings.get_setting('timeout_send_command_sec')
         )
-    except requests.exceptions.Timeout as ex:
+    except exceptions.NoConnectionException:
+        response['status'] = 'failure'
+        response['message'] = 'No established connection, unable to ping rover server.'
+        return response
+    except requests.exceptions.Timeout:
         response['status'] = 'failure'
         response['message'] = 'Request to rover timed out.'
         return response
-    except AssertionError as err:
+    except AssertionError:
         response['status'] = 'failure'
         response['message'] = 'Response status code is not 200 OK.'
         return response
@@ -147,11 +187,10 @@ def disconnect_rover():
     # Set state variables
     state.set_attribute('connection_id', None)
     state.set_attribute('connection_remote_addr', None)
+    state.set_attribute('connection_port', None)
     state.set_attribute('connection_established', False)
 
-    response['status'] = 'success'
-    response['message'] = 'Successfully disconnected from rover.'
-    return response
+    return response.json()
 
 @bp.route('/force_disconnect_rover', methods=['GET'])
 def force_disconnect_rover():
@@ -182,6 +221,7 @@ def force_disconnect_rover():
     # Set state variables
     state.set_attribute('connection_id', None)
     state.set_attribute('connection_remote_addr', None)
+    state.set_attribute('connection_port', None)
     state.set_attribute('connection_established', False)
 
     response['status'] = 'success'

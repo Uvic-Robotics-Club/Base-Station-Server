@@ -1,5 +1,5 @@
 from flask import Flask
-from server import hotspot, rover, ui
+from server import api_hotspot, api_rover, connection
 import os
 
 def create_app(test_config=None):
@@ -21,8 +21,12 @@ def create_app(test_config=None):
     def root():
         return {'status': 'success', 'message': 'Base station server is alive'}
 
-    app.register_blueprint(hotspot.bp)
-    app.register_blueprint(rover.bp)
-    app.register_blueprint(ui.bp)
+    app.register_blueprint(connection.bp)
+    app.register_blueprint(api_hotspot.bp)
+    app.register_blueprint(api_rover.bp)
+
+    # Start other application threads:
+    #   1) Joystick thread, reads input from any joystick and sends as command.
+    
 
     return app

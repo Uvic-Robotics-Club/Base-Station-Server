@@ -22,6 +22,7 @@ class State(metaclass=Singleton):
         self.__data = {
             'connection_established': False,
             'connection_remote_addr': None,
+            'connection_port': None,
             'connection_id': None,
             'hotspot_active': False,
             'rover_telemetry': {}

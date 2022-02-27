@@ -3,7 +3,7 @@ from state import State
 import subprocess
 from .utils import assert_expected_keys_list, get_header_key_indexes
 
-bp = Blueprint('hotspot', __name__, url_prefix='/hotspot')
+bp = Blueprint('api/hotspot', __name__, url_prefix='/api/hotspot')
 state = State()
 
 @bp.route('/get_network_interfaces', methods=['GET'])

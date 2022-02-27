@@ -7,7 +7,7 @@ from random import randrange
 from state import State
 
 
-bp = Blueprint('rover', __name__, url_prefix='/rover')
+bp = Blueprint('connection', __name__, url_prefix='/connection')
 state = State()
 
 @bp.route('/connect', methods=['GET'])
@@ -19,6 +19,14 @@ def connect():
     '''
     response = {'status': None}
     remote_addr = request.remote_addr
+    args = dict(request.args)
+
+    try:
+        assert 'port' in args, 'port parameter not provided.'
+    except AssertionError as err:
+        response['status'] = 'Malformed request'
+        response['message'] = str(err)
+        return response
 
     # If connection already exists, prevent new connection.
     if state.get_attribute('connection_established'):
@@ -30,6 +38,7 @@ def connect():
     new_connection_id = randrange(100000000, 999999999)
     state.set_attribute('connection_id', new_connection_id)
     state.set_attribute('connection_remote_addr', remote_addr)
+    state.set_attribute('connection_port', args['port'])
     state.set_attribute('connection_established', True)
 
     response['status'] = 'success'
@@ -79,6 +88,7 @@ def disconnect():
     # Set state variables to correct values
     state.set_attribute('connection_id', None)
     state.set_attribute('connection_remote_addr', None)
+    state.set_attribute('connection_port', None)
     state.set_attribute('connection_established', False)
 
     response['status'] = 'success'
