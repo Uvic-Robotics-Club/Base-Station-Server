@@ -17,7 +17,7 @@ Y_AXIS_DEADZONE = 0.14 * MAX_VAL
 Z_AXIS_DEADZONE = 0.20 * MAX_VAL # Rotation around z axis
 SLIDER_OFFSET = 1 * MAX_VAL # Slider in front of joystick
 
-SLEEP_DURATION_SEC = 0.5
+SLEEP_DURATION_SEC = 1.0
 
 class Joystick():
 
@@ -126,7 +126,7 @@ class Joystick():
 
             try:
                 #print(command)
-                send_command(command)
+                print(send_command(command).json())
             except exceptions.NoConnectionException:
                 print('No connection, cannot send joystick position...')
                 pass

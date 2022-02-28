@@ -1,8 +1,6 @@
 from flask import Flask
-from joystick import Joystick
 import os
-from server import api_hotspot, api_rover, connection
-import threading
+from server import api_hotspot, api_rover, api_joystick, connection
 
 def create_app(test_config=None):
     # Create and configure app
@@ -26,10 +24,6 @@ def create_app(test_config=None):
     app.register_blueprint(connection.bp)
     app.register_blueprint(api_hotspot.bp)
     app.register_blueprint(api_rover.bp)
-
-    # Start other application threads:
-    #   1) Joystick thread, reads input from any joystick and sends as command.
-    thread_joystick = threading.Thread(target=Joystick.control_drivetrain)
-    thread_joystick.start()
+    app.register_blueprint(api_joystick.bp)
 
     return app
