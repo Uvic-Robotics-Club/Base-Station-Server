@@ -1,9 +1,11 @@
 # This file contains methods to send network requests to the rover from the base station.
 from exceptions import NoConnectionException
+from health import HealthCheck
 import requests
 from random import randrange
 from settings import Settings
 from state import State
+import threading
 
 REQUEST_TIMEOUT_SEC = 5.0
 
@@ -25,6 +27,8 @@ def connect(remote_addr, port):
         request_url = 'http://{}:{}/connect'.format(remote_addr, port)
         response = requests.get(request_url, params=params, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
+    except requests.exceptions.ConnectionError as err:
+        raise err
     except requests.exceptions.Timeout as ex:
         raise ex
     except AssertionError as err:
@@ -36,6 +40,10 @@ def connect(remote_addr, port):
     state.set_attribute('connection_remote_addr', remote_addr)
     state.set_attribute('connection_port', port)
     state.set_attribute('connection_established', True)
+
+    # Start new thread to monitor connection health.
+    thread_health_check = threading.Thread(target=HealthCheck.monitor_connection, args=(ping, disconnect))
+    thread_health_check.start()
 
     return response
 
@@ -60,6 +68,8 @@ def send_command(command):
         request_url = 'http://{}:{}/send_command'.format(remote_addr, port)
         response = requests.post(request_url, json=command, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
+    except requests.exceptions.ConnectionError as err:
+        raise err
     except requests.exceptions.Timeout as ex:
         raise ex
     except AssertionError as err:
@@ -82,6 +92,8 @@ def get_telemetry():
         request_url = 'http://{}:{}/get_rover_telemetry'.format(remote_addr, port)
         response = requests.get(request_url, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
+    except requests.exceptions.ConnectionError as err:
+        raise err
     except requests.exceptions.Timeout as ex:
         raise ex
     except AssertionError as err:
@@ -104,6 +116,8 @@ def ping():
         port = settings.get_setting('port_rover_http')
         response = requests.get('http://{}:{}'.format(remote_addr, port), timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
+    except requests.exceptions.ConnectionError as err:
+        raise err
     except requests.exceptions.Timeout as ex:
         raise ex
     except AssertionError as err:
@@ -122,12 +136,20 @@ def disconnect():
     if not state.get_attribute('connection_established'):
         raise NoConnectionException
 
+    # Set state variables
+    state.set_attribute('connection_id', None)
+    state.set_attribute('connection_remote_addr', None)
+    state.set_attribute('connection_port', None)
+    state.set_attribute('connection_established', False)
+
     try:
         remote_addr = state.get_attribute('connection_remote_addr')
         port = settings.get_setting('port_rover_http')
         request_url = 'http://{}:{}/disconnect'.format(remote_addr, port)
         response = requests.get(request_url, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
+    except requests.exceptions.ConnectionError as err:
+        raise err
     except requests.exceptions.Timeout as ex:
         raise ex
     except AssertionError as err:

@@ -3,5 +3,7 @@
     "port_rover_http": 5001,
     "timeout_ping_sec": 5.0,
     "timeout_send_command_sec": 5.0,
-    "timeout_request_connection_sec": 5.0
+    "timeout_request_connection_sec": 5.0,
+    "healthcheck_timeout_rover_connection_sec": 10.0,
+    "healthcheck_interval_rover_ping_sec": 1.0
 }

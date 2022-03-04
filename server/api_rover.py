@@ -29,12 +29,6 @@ def connect():
         response['message'] = str(err)
         return response
 
-    # If connection already exists, fail.
-    # TODO: Determine if this is appropriate
-    #if state.get_attribute('connection_established'):
-    #    response['status'] = 'failure'
-    #    response['message'] = 'Established connection exists. Disconnect first, then reconnect.'
-
     try:
         rover_response = client.connect(
             remote_addr = args['remote_addr'],
@@ -43,6 +37,10 @@ def connect():
     except exceptions.NoConnectionException:
         response['status'] = 'failure'
         response['message'] = 'No established connection, unable to ping rover server.'
+        return response
+    except requests.exceptions.ConnectionError as err:
+        response['status'] = 'failure'
+        response['message'] = 'ConnectionError: Max retries exceeded with URL.'
         return response
     except requests.exceptions.Timeout:
         response['status'] = 'failure'
@@ -82,6 +80,10 @@ def send_command():
         response['status'] = 'failure'
         response['message'] = 'No established connection, unable to ping rover server.'
         return response
+    except requests.exceptions.ConnectionError as err:
+        response['status'] = 'failure'
+        response['message'] = 'ConnectionError: Max retries exceeded with URL.'
+        return response
     except requests.exceptions.Timeout:
         response['status'] = 'failure'
         response['message'] = 'Request to rover timed out.'
@@ -105,6 +107,10 @@ def get_telemetry():
     except exceptions.NoConnectionException:
         response['status'] = 'failure'
         response['message'] = 'No established connection, unable to ping rover server.'
+        return response
+    except requests.exceptions.ConnectionError as err:
+        response['status'] = 'failure'
+        response['message'] = 'ConnectionError: Max retries exceeded with URL.'
         return response
     except requests.exceptions.Timeout:
         response['status'] = 'failure'
@@ -130,6 +136,10 @@ def ping():
         response['status'] = 'failure'
         response['message'] = 'No established connection, unable to ping rover server.'
         return response
+    except requests.exceptions.ConnectionError as err:
+        response['status'] = 'failure'
+        response['message'] = 'ConnectionError: Max retries exceeded with URL.'
+        return response
     except requests.exceptions.Timeout:
         response['status'] = 'failure'
         response['message'] = 'Request to rover timed out.'
@@ -148,18 +158,16 @@ def disconnect():
     '''
     response = {'status': None}
 
-    # If no connection exists, return failure.
-    if not state.get_attribute('connection_established'):
-        response['status'] = 'failure'
-        response['message'] = 'No established connection, no connections to disconnect.'
-        return response
-
     try:
         # Send request to rover
         response = client.disconnect()
     except exceptions.NoConnectionException:
         response['status'] = 'failure'
-        response['message'] = 'No established connection, unable to ping rover server.'
+        response['message'] = 'No established connection, no connection to disconnect.'
+        return response
+    except requests.exceptions.ConnectionError as err:
+        response['status'] = 'failure'
+        response['message'] = 'ConnectionError: Max retries exceeded with URL.'
         return response
     except requests.exceptions.Timeout:
         response['status'] = 'failure'
@@ -169,12 +177,6 @@ def disconnect():
         response['status'] = 'failure'
         response['message'] = 'Response status code is not 200 OK.'
         return response
-
-    # Set state variables
-    state.set_attribute('connection_id', None)
-    state.set_attribute('connection_remote_addr', None)
-    state.set_attribute('connection_port', None)
-    state.set_attribute('connection_established', False)
 
     return response.json()
 
@@ -187,29 +189,24 @@ def force_disconnect():
     '''
     response = {'status': None}
 
-    # If no connection exists, return failure.
-    if not state.get_attribute('connection_established'):
+    try:
+        # Send request to rover. Ideally, would send async request, but requests 
+        # module does not have that support currently.
+        client.disconnect()
+    except exceptions.NoConnectionException:
         response['status'] = 'failure'
         response['message'] = 'No established connection, no connections to disconnect.'
         return response 
-
-    try:
-        # Send request to rover, with short timeout. Ideally, would send
-        # async request, but requests module does not have support currently.
-        client.disconnect()
-    except requests.exceptions.Timeout as ex:
+    except requests.exceptions.ConnectionError:
         pass
-
-    # Set state variables
-    state.set_attribute('connection_id', None)
-    state.set_attribute('connection_remote_addr', None)
-    state.set_attribute('connection_port', None)
-    state.set_attribute('connection_established', False)
+    except requests.exceptions.Timeout:
+        pass
+    except AssertionError:
+        pass
 
     response['status'] = 'success'
     response['message'] = 'Successfuly forcefully closed connection.'
     return response
-
 
 @bp.route('/scan_ip_addresses', methods=['GET'])
 def scan_ip_addresses():

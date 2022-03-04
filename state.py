@@ -26,6 +26,8 @@ class State(metaclass=Singleton):
             'connection_id': None,
             'hotspot_active': False,
             'joystick_initialized': False,
+            'joystick_thread': None,
+            'joystick_thread_event': None,
             'rover_telemetry': {}
         }
     

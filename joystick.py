@@ -8,6 +8,7 @@
 import exceptions
 import pygame
 import requests
+from state import State
 import time
 from client import send_command
 
@@ -20,6 +21,8 @@ SLIDER_OFFSET = 1 * MAX_VAL # Slider in front of joystick
 # Minimum interval between reads of joystick axis.
 SLEEP_DURATION_SEC = 0.3
 PERCENTAGE_VARIANCE = 0.05
+
+state = State()
 
 class Joystick():
 
@@ -35,32 +38,13 @@ class Joystick():
             print('Cannot find joystick. Not running joystick.')
             return
 
-        # Initialize initial joystick positions
-        #x_axis_curr, y_axis_curr, z_axis_curr = None, None, None
-
-        while pygame.joystick.get_count() > 0:
+        while (pygame.joystick.get_count() > 0) and (not state.get_attribute('joystick_thread_event').is_set()):
             # Retrieve joystick data
             # X and Y axis range [-100.0, 100.0], where negative is reverse.
             pygame.event.get()
 
             x_axis = joystick.get_axis(0) * MAX_VAL
             y_axis = (-joystick.get_axis(1)) * MAX_VAL
-            # Rotation around Z axis range [-100.0, 100.0] where negative is left rotation.
-            #z_axis = joystick.get_axis(3) * MAX_VAL
-
-            # Ensure only publish values that are different
-            #if x_axis_curr and y_axis_curr and z_axis_curr and \
-            #    Joystick.value_in_range(center_val=x_axis_curr, actual_val=x_axis, min_val=0, max_val=MAX_VAL, percentage=PERCENTAGE_VARIANCE) and \
-            #    Joystick.value_in_range(center_val=y_axis_curr, actual_val=y_axis, min_val=0, max_val=MAX_VAL, percentage=PERCENTAGE_VARIANCE) and \
-            #    Joystick.value_in_range(center_val=z_axis_curr, actual_val=z_axis, min_val=0, max_val=MAX_VAL, percentage=PERCENTAGE_VARIANCE):
-            #    continue
-            #x_axis_curr, y_axis_curr, z_axis_curr = x_axis, y_axis, z_axis
-
-            # Limiter is in range [0, 10.0] where 0 is when slider is all the way
-            # back towards negative sign
-            #print('axis 2: {}'.format(joystick.get_axis(2)))
-            #limiter = (0 - joystick.get_axis(2)) * MAX_VAL
-            #limiter = (limiter + SLIDER_OFFSET) / 2 # Maps from [-100.0, 100.0] to [0, 100.0]
 
             # Set initial speed before considering turning
             speedLeft = speedRight = y_axis
@@ -88,10 +72,6 @@ class Joystick():
                     speedLeft += x_axis
                     speedRight -= x_axis
 
-            # Limit values
-            #speedLeft = -limiter if speedLeft < -limiter else limiter if speedLeft > limiter else speedLeft
-            #speedRight = -limiter if speedRight < -limiter else limiter if speedRight > limiter else speedRight
-
             # Arduino expects ints
             speed_left = int(speedLeft)
             speed_right = int(speedRight)
@@ -117,14 +97,14 @@ class Joystick():
         
             # reverse is 0, forward is 1
             if(speed_left>0):
-                write_direction_left = 0
-            else:
                 write_direction_left = 1
+            else:
+                write_direction_left = 0
             
             if(speed_right>0):
-                write_direction_right = 0
-            else:
                 write_direction_right = 1
+            else:
+                write_direction_right = 0
 
             write_speed_left = Joystick.remap(abs(speed_left),0,100,0,255)
             write_speed_right = Joystick.remap(abs(speed_right),0,100,0,255)
@@ -152,6 +132,8 @@ class Joystick():
                 pass
 
             time.sleep(SLEEP_DURATION_SEC)
+
+        print('Finishing joystick thread.')
 
     @staticmethod
     def remap(old_value, old_min, old_max, new_min, new_max):
