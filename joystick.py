@@ -17,7 +17,9 @@ Y_AXIS_DEADZONE = 0.14 * MAX_VAL
 Z_AXIS_DEADZONE = 0.20 * MAX_VAL # Rotation around z axis
 SLIDER_OFFSET = 1 * MAX_VAL # Slider in front of joystick
 
-SLEEP_DURATION_SEC = 1.0
+# Minimum interval between reads of joystick axis.
+SLEEP_DURATION_SEC = 0.3
+PERCENTAGE_VARIANCE = 0.05
 
 class Joystick():
 
@@ -33,21 +35,32 @@ class Joystick():
             print('Cannot find joystick. Not running joystick.')
             return
 
+        # Initialize initial joystick positions
+        #x_axis_curr, y_axis_curr, z_axis_curr = None, None, None
+
         while pygame.joystick.get_count() > 0:
             # Retrieve joystick data
             # X and Y axis range [-100.0, 100.0], where negative is reverse.
             pygame.event.get()
+
             x_axis = joystick.get_axis(0) * MAX_VAL
             y_axis = (-joystick.get_axis(1)) * MAX_VAL
-
             # Rotation around Z axis range [-100.0, 100.0] where negative is left rotation.
-            z_axis = joystick.get_axis(3) * MAX_VAL
-            # print(x_axis, y_axis, z_axis)
+            #z_axis = joystick.get_axis(3) * MAX_VAL
+
+            # Ensure only publish values that are different
+            #if x_axis_curr and y_axis_curr and z_axis_curr and \
+            #    Joystick.value_in_range(center_val=x_axis_curr, actual_val=x_axis, min_val=0, max_val=MAX_VAL, percentage=PERCENTAGE_VARIANCE) and \
+            #    Joystick.value_in_range(center_val=y_axis_curr, actual_val=y_axis, min_val=0, max_val=MAX_VAL, percentage=PERCENTAGE_VARIANCE) and \
+            #    Joystick.value_in_range(center_val=z_axis_curr, actual_val=z_axis, min_val=0, max_val=MAX_VAL, percentage=PERCENTAGE_VARIANCE):
+            #    continue
+            #x_axis_curr, y_axis_curr, z_axis_curr = x_axis, y_axis, z_axis
 
             # Limiter is in range [0, 10.0] where 0 is when slider is all the way
             # back towards negative sign
-            limiter = (0 - joystick.get_axis(2)) * MAX_VAL
-            limiter = (limiter + SLIDER_OFFSET) / 2 # Maps from [-100.0, 100.0] to [0, 100.0]
+            #print('axis 2: {}'.format(joystick.get_axis(2)))
+            #limiter = (0 - joystick.get_axis(2)) * MAX_VAL
+            #limiter = (limiter + SLIDER_OFFSET) / 2 # Maps from [-100.0, 100.0] to [0, 100.0]
 
             # Set initial speed before considering turning
             speedLeft = speedRight = y_axis
@@ -60,13 +73,14 @@ class Joystick():
             #    print('Axis {}: {}'.format(i, joystick.get_axis(i)))
             # print('==============')
 
-
+            # If x_axis and y_axis are both within the deadzone, assume joystick is centered.
             if abs(x_axis) < X_AXIS_DEADZONE and abs(y_axis) < Y_AXIS_DEADZONE:
+                pass
                 # Joystick is centred
-                if abs(z_axis) > Z_AXIS_DEADZONE:
-                    # Rotate rover in place
-                    speedLeft += z_axis
-                    speedRight -= z_axis
+                #if abs(z_axis) > Z_AXIS_DEADZONE:
+                #    # Rotate rover in place
+                #    speedLeft += z_axis
+                #    speedRight -= z_axis
             else:
                 # Joystick is not centred
                 if x_axis != 0:
@@ -75,8 +89,8 @@ class Joystick():
                     speedRight -= x_axis
 
             # Limit values
-            speedLeft = -limiter if speedLeft < -limiter else limiter if speedLeft > limiter else speedLeft
-            speedRight = -limiter if speedRight < -limiter else limiter if speedRight > limiter else speedRight
+            #speedLeft = -limiter if speedLeft < -limiter else limiter if speedLeft > limiter else speedLeft
+            #speedRight = -limiter if speedRight < -limiter else limiter if speedRight > limiter else speedRight
 
             # Arduino expects ints
             speed_left = int(speedLeft)
@@ -126,7 +140,7 @@ class Joystick():
 
             try:
                 #print(command)
-                print(send_command(command).json())
+                send_command(command)
             except exceptions.NoConnectionException:
                 print('No connection, cannot send joystick position...')
                 pass
@@ -154,6 +168,21 @@ class Joystick():
             new_range = new_max - new_min
             new_value = (((old_value - old_min) * new_range) / old_range) + new_min
         return new_value
+
+    @staticmethod
+    def value_in_range(center_val, actual_val, min_val, max_val, percentage):
+        '''
+        Returns whether actual_val, a number, is within a percentage of center_val
+        as speciifed by min_val and max_val (a range).
+        '''
+        assert type(center_val) in [float, int]
+        assert type(actual_val) in [float, int]
+        assert type(min_val) in [float, int]
+        assert type(max_val) in [float, int]
+        assert type(percentage) == float
+
+        one_side_range = (max_val - min_val) * percentage
+        return abs(actual_val - center_val) <= one_side_range
 
 if __name__ == '__main__':
     Joystick.control_drivetrain()
