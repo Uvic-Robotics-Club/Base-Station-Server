@@ -21,7 +21,7 @@ class VideoServer():
 
     def setup_socket(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.s.bind(('127.0.0.1', settings.get_setting('port_base_station_udp_video')))
+        self.s.bind(('0.0.0.0', settings.get_setting('port_base_station_udp_video')))
         self.dump_buffer()
         self.listen()
 
