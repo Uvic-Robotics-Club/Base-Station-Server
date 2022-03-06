@@ -8,9 +8,6 @@ from settings import Settings
 from state import State
 from time import sleep, time
 
-# Initializes health check thread. If a connection exists, 
-# keep checking 
-
 state = State()
 settings = Settings()
 

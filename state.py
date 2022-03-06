@@ -28,6 +28,7 @@ class State(metaclass=Singleton):
             'joystick_initialized': False,
             'joystick_thread': None,
             'joystick_thread_event': None,
+            'rover_video_frame_latest': None,
             'rover_telemetry': {}
         }
     

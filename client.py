@@ -3,6 +3,7 @@ from exceptions import NoConnectionException
 from health import HealthCheck
 import requests
 from random import randrange
+from server.video import VideoServer
 from settings import Settings
 from state import State
 import threading
@@ -44,6 +45,10 @@ def connect(remote_addr, port):
     # Start new thread to monitor connection health.
     thread_health_check = threading.Thread(target=HealthCheck.monitor_connection, args=(ping, disconnect))
     thread_health_check.start()
+
+    # Start new thread to receive camera feed.
+    thread_video_server = threading.Thread(target=VideoServer)
+    thread_video_server.start()
 
     return response
 

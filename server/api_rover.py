@@ -2,8 +2,9 @@
 # sending commands to the rover, and so on...
 import client
 import exceptions
-from flask import Blueprint, request
+from flask import Blueprint, request, Response
 import requests
+from server.video import VideoServer
 from settings import Settings
 from state import State
 
@@ -122,6 +123,21 @@ def get_telemetry():
         return response
     
     return rover_response.json()
+
+@bp.route('/get_video_feed', methods=['GET'])
+def get_video_feed():
+    '''
+    Gets video feed received from rover.
+    '''
+    #frame_generator = VideoServer.get_latest_frame()
+    #if not frame:
+    #    return {'status': 'failure', 'message': 'No frames to display'}
+    def yield_frames():
+        while True:
+            yield VideoServer.get_latest_frame()
+
+    return Response(yield_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 @bp.route('/ping', methods=['GET'])
 def ping():
