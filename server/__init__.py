@@ -1,6 +1,6 @@
 from flask import Flask
 import os
-from server import api_hotspot, api_rover, api_joystick, connection
+from server import api_hotspot, api_rover, api_joystick, connection, ui
 
 def create_app(test_config=None):
     # Create and configure app
@@ -25,5 +25,6 @@ def create_app(test_config=None):
     app.register_blueprint(api_hotspot.bp)
     app.register_blueprint(api_rover.bp)
     app.register_blueprint(api_joystick.bp)
+    app.register_blueprint(ui.bp)
 
     return app
