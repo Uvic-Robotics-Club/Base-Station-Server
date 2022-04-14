@@ -24,12 +24,18 @@ class HealthCheck():
 
         if not state.get_attribute('connection_established'):
             return
+        connection_id = state.get_attribute('connection_id')
 
         last_response_timestamp = float('inf')
         while (time() - last_response_timestamp) < settings.get_setting('healthcheck_timeout_rover_connection_sec'):
             
             # Wait for ping interval, then ping rover.
             sleep(settings.get_setting('healthcheck_interval_rover_ping_sec'))
+
+            # If connection ID is different, then return.
+            if connection_id != state.get_attribute('connection_id'):
+                print('Health check: Connection ID has changed, ending health check thread.')
+                return
 
             # If connection is now closed, then return.
             if not state.get_attribute('connection_established'):

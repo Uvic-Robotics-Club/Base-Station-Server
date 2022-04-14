@@ -129,9 +129,6 @@ def get_video_feed():
     '''
     Gets video feed received from rover.
     '''
-    #frame_generator = VideoServer.get_latest_frame()
-    #if not frame:
-    #    return {'status': 'failure', 'message': 'No frames to display'}
     def yield_frames():
         while True:
             yield VideoServer.get_latest_frame()
