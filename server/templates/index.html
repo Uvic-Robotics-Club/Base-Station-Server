@@ -31,17 +31,31 @@
     <div class="row align-items-center">
       <div class="row">
         <div class="col">
-          One of three columns
+          Row 1 Col 1
         </div>
         <div class="col">
-          One of three columns
+          Row 1 Col 2
         </div>
         <div class="col">
           {% include "connection_status.html" %}
         </div>
       </div>
     </div>
+    <div class="row align-items-center">
+      <div class="row">
+        <div class="col">
+          Row 2 Col 1
+        </div>
+        <div class="col">
+          Row 2 Col 2
+        </div>
+        <div class="col">
+          {% include "connection_manager.html" %}
+        </div>
+      </div>
+    </div>
   </div>
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

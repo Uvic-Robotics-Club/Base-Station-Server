@@ -34,23 +34,32 @@ class HealthCheck():
 
             # If connection ID is different, then return.
             if connection_id != state.get_attribute('connection_id'):
+                state.set_attribute('connection_ping_status', None)
+                state.set_attribute('connection_ping_last_response', None)
+                
                 print('Health check: Connection ID has changed, ending health check thread.')
                 return
 
             # If connection is now closed, then return.
             if not state.get_attribute('connection_established'):
+                state.set_attribute('connection_ping_status', None)
+                state.set_attribute('connection_ping_last_response', None)
+                
                 print('Health check: Connection closed by another thread.')
                 return
 
             try:
                 ping()
+                state.set_attribute('connection_ping_status', 'healthy')
+                state.set_attribute('connection_ping_last_response', time())
+
                 print('Health check: Ping success!')
             except requests.exceptions.ConnectionError as err:
-                continue
+                state.set_attribute('connection_ping_status', 'unreachable')
             except requests.exceptions.Timeout as ex:
-                continue
+                state.set_attribute('connection_ping_status', 'unreachable')
             except AssertionError as err:
-                continue
+                state.set_attribute('connection_ping_status', 'unreachable')
             
             last_response_timestamp = time()
 
@@ -58,6 +67,7 @@ class HealthCheck():
         try:
             # Send request to rover, with short timeout. Ideally, would send
             # async request, but requests module does not have support currently.
+            state.set_attribute('connection_ping_status', 'timeout')
             print('Timeout, disconnecting from rover.')
             disconnect()
         except exceptions.NoConnectionException:
@@ -68,3 +78,7 @@ class HealthCheck():
             pass
         except AssertionError:
             pass
+
+        # Reset ping state parameters
+        state.set_attribute('connection_ping_status', None)
+        state.set_attribute('connection_ping_last_response', None)

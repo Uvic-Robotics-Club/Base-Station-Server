@@ -24,6 +24,8 @@ class State(metaclass=Singleton):
             'connection_remote_addr': None,
             'connection_port': None,
             'connection_id': None,
+            'connection_ping_status': None,
+            'connection_ping_last_response': None,
             'hotspot_active': False,
             'joystick_initialized': False,
             'joystick_thread': None,
