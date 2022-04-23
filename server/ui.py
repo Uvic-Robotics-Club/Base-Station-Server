@@ -1,6 +1,6 @@
-from flask import Blueprint, request, Response, render_template, stream_with_context
-import json
+from flask import Blueprint, render_template
 from state import State
+from time import sleep
 
 bp = Blueprint('ui', __name__, url_prefix='/ui')
 state = State()
@@ -13,17 +13,24 @@ def index():
     '''
     return render_template('index.html')
 
-@bp.route('/get_connection_status', methods=['GET'])
-def get_connection_status():
+@bp.route('/get_state', methods=['GET'])
+def get_state():
     '''
-    Returns up-to-date connection status by streaming connection
-    state.
+    Returns up-to-date application state. 
     '''
+    state_json = state.get_all_attributes()
+    return state_json
 
-    status = {
-        'connection_established': state.get_attribute('connection_established'),
-        'connection_remote_addr': state.get_attribute('connection_remote_addr'),
-        'connection_port': state.get_attribute('connection_port'),
-        'connection_id': state.get_attribute('connection_id')
-    }
-    return status
+@bp.route('/get_state_long_poll', methods=['GET'])
+def get_state_long_poll():
+    '''
+    Returns up-to-date application state by returning request 
+    only when state changes.
+    '''
+    current_state_json = state.get_all_attributes()
+    latest_state_json = current_state_json.copy()
+
+    while latest_state_json == current_state_json:
+        sleep(0.2)
+        latest_state_json = state.get_all_attributes()
+    return latest_state_json

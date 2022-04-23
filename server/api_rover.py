@@ -25,6 +25,7 @@ def connect():
     # Validate remote adress parameter is present.
     try:
         assert 'remote_addr' in args, 'remote_addr parameter not provided.'
+        assert 'port' in args, 'port parameter not provided.'
     except AssertionError as err:
         response['status'] = 'Malformed request'
         response['message'] = str(err)
@@ -33,7 +34,8 @@ def connect():
     try:
         rover_response = client.connect(
             remote_addr = args['remote_addr'],
-            port = settings.get_setting('port_rover_http')
+            port = int(args['port'])
+            #port = settings.get_setting('port_rover_http')
         )
     except exceptions.NoConnectionException:
         response['status'] = 'failure'

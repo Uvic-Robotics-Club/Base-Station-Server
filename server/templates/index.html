@@ -31,10 +31,10 @@
     <div class="row align-items-center">
       <div class="row">
         <div class="col">
-          Row 1 Col 1
+          {% include "video.html" %}
         </div>
         <div class="col">
-          Row 1 Col 2
+          {% include "drive_train.html" %}
         </div>
         <div class="col">
           {% include "connection_status.html" %}
@@ -51,6 +51,19 @@
         </div>
         <div class="col">
           {% include "connection_manager.html" %}
+        </div>
+      </div>
+    </div>
+    <div class="row align-items-center">
+      <div class="row">
+        <div class="col">
+          Row 3 Col 1
+        </div>
+        <div class="col">
+          Row 3 Col 2
+        </div>
+        <div class="col">
+          {% include "joystick.html" %}
         </div>
       </div>
     </div>

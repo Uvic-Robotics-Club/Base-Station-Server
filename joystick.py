@@ -35,10 +35,12 @@ class Joystick():
             joystick = pygame.joystick.Joystick(0)
             joystick.init()
         except pygame.error:
-            print('Cannot find joystick. Not running joystick.')
+            state.set_attribute('joystick_status', 'not found')
+            #print('Cannot find joystick. Not running joystick.')
             return
+        state.set_attribute('joystick_status', 'initialized')
 
-        while (pygame.joystick.get_count() > 0) and (not state.get_attribute('joystick_thread_event').is_set()):
+        while (pygame.joystick.get_count() > 0) and (state.get_attribute('joystick_status') != 'tearing down'):
             # Retrieve joystick data
             # X and Y axis range [-100.0, 100.0], where negative is reverse.
             pygame.event.get()
@@ -106,14 +108,19 @@ class Joystick():
             else:
                 write_direction_right = 0
 
-            write_speed_left = Joystick.remap(abs(speed_left),0,100,0,255)
-            write_speed_right = Joystick.remap(abs(speed_right),0,100,0,255)
+            write_speed_left = int(Joystick.remap(abs(speed_left),0,100,0,255))
+            write_speed_right = int(Joystick.remap(abs(speed_right),0,100,0,255))
+
+            state.set_attribute('joystick_speed_left', write_speed_left)
+            state.set_attribute('joystick_speed_right', write_speed_right)
+            state.set_attribute('joystick_direction_left', write_direction_left)
+            state.set_attribute('joystick_direction_right', write_direction_right)
 
             # Build command and send.
             command = {
                 'type': 'DRIVE_TRAIN',
-                'left_speed': int(write_speed_left),
-                'right_speed': int(write_speed_right),
+                'left_speed': write_speed_left,
+                'right_speed': write_speed_right,
                 'left_direction': write_direction_left,
                 'right_direction': write_direction_right
             }
@@ -133,6 +140,10 @@ class Joystick():
 
             time.sleep(SLEEP_DURATION_SEC)
 
+        state.set_attribute('joystick_speed_left', None)
+        state.set_attribute('joystick_speed_right', None)
+        state.set_attribute('joystick_direction_left', None)
+        state.set_attribute('joystick_direction_right', None)
         print('Finishing joystick thread.')
 
     @staticmethod

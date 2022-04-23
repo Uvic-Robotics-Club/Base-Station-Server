@@ -1,1 +1,19 @@
 <h2 class="h2-display">Connection Manager</h2>
+<div class="row">
+    <label for="conn-manager-address" class="col-sm-2 col-form-label">IP Address</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="conn-manager-address">
+    </div>
+  </div>
+  <div class="row">
+    <label for="conn-manager-port" class="col-sm-2 col-form-label">Port</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="conn-manager-port">
+    </div>
+  </div>
+  <div class="d-grid gap-2">
+    <button type="button" class="btn btn-primary disabled" id="conn-manager-connect-btn">Connect</button>
+    <button type="button" class="btn btn-danger disabled" id="conn-manager-disconnect-btn">Disconnect</button>
+    <button type="button" class="btn btn-danger disabled" id="conn-manager-force-disconnect-btn">Force Disconnect</button>
+  </div>
+</div>

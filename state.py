@@ -27,10 +27,11 @@ class State(metaclass=Singleton):
             'connection_ping_status': None,
             'connection_ping_last_response': None,
             'hotspot_active': False,
-            'joystick_initialized': False,
-            'joystick_thread': None,
-            'joystick_thread_event': None,
-            'rover_video_frame_latest': None,
+            'joystick_status': 'uninitialized',
+            'joystick_speed_left': None,
+            'joystick_speed_right': None,
+            'joystick_direction_left': None,
+            'joystick_direction_right': None,
             'rover_telemetry': {}
         }
     

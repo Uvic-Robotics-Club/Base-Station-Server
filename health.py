@@ -52,6 +52,7 @@ class HealthCheck():
                 ping()
                 state.set_attribute('connection_ping_status', 'healthy')
                 state.set_attribute('connection_ping_last_response', time())
+                last_response_timestamp = time()
 
                 print('Health check: Ping success!')
             except requests.exceptions.ConnectionError as err:
@@ -60,8 +61,6 @@ class HealthCheck():
                 state.set_attribute('connection_ping_status', 'unreachable')
             except AssertionError as err:
                 state.set_attribute('connection_ping_status', 'unreachable')
-            
-            last_response_timestamp = time()
 
         # Forcibly disconnect from the rover.
         try:

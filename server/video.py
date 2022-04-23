@@ -4,17 +4,30 @@ from settings import Settings
 import socket
 from state import State
 import struct
+from time import sleep
 
 settings = Settings()
 state = State()
 
 MAX_DGRAM = 2**16
+BLANK_IMAGE_HEIGHT = 300
+BLANK_IMAGE_WIDTH = 300
 
 class VideoServer():
     '''
     This class is responsible for listening for video frames being sent
     from the rover to the base station.
     '''
+    # This stores the jpg binary data of the most recently received frame from the rover.
+    video_frame_front_camera = None
+
+    # Blank image used as placeholder when video frame does not exist. It is an image
+    # of 3 bars (blue, green, red).
+    blank_image_array = np.zeros((BLANK_IMAGE_HEIGHT, BLANK_IMAGE_WIDTH, 3), np.uint8)
+    blank_image_array[:,0:BLANK_IMAGE_WIDTH//3] = (255,0,0)      # (B, G, R)
+    blank_image_array[:,BLANK_IMAGE_WIDTH//3:2*(BLANK_IMAGE_WIDTH//3)] = (0,255,0)
+    blank_image_array[:,2*(BLANK_IMAGE_WIDTH//3):BLANK_IMAGE_WIDTH] = (0,0,255)
+    blank_image = cv.imencode('.jpg', blank_image_array)[1].tostring()
 
     def __init__(self):
         self.setup_socket()
@@ -49,10 +62,7 @@ class VideoServer():
 
                 data += seg[1:]
                 # Update latest video frame in state
-                state.set_attribute('rover_video_frame_latest', data)
-
-                #img = cv.imdecode(np.fromstring(data, dtype=np.uint8), cv.IMREAD_COLOR)
-                #cv.imwrite('/home/anton/Desktop/frame_{}.jpg'.format(i), img)
+                VideoServer.video_frame_front_camera = data
                 data = b''
                 i+=1
 
@@ -61,8 +71,13 @@ class VideoServer():
 
     @staticmethod
     def get_latest_frame():
-        return b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + state.get_attribute('rover_video_frame_latest') + b'\r\n\r\n'
-        #return state.get_attribute('rover_video_frame_latest')
+        if VideoServer.video_frame_front_camera is not None:
+            return b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + VideoServer.video_frame_front_camera + b'\r\n\r\n'
+        
+        # If no video frames have been received yet, then display a "blank" image as a placeholder. We sleep for a 
+        # duration such that streaming responses are not overhwelmed.
+        sleep(0.1)
+        return b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + VideoServer.blank_image + b'\r\n\r\n'
 
     def dump_buffer(self):
         while True:
