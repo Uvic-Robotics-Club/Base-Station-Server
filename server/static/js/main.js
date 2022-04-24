@@ -65,7 +65,7 @@ let update_conn_status = function() {
     if (conn_ping_last_response != null) {
         current_timestamp_sec = Date.now() / 1000;
         last_response_timestamp = current_timestamp_sec - conn_ping_last_response;
-        conn_ping_last_response_element.innerHTML = last_response_timestamp.toFixed(2) + ' s';
+        conn_ping_last_response_element.innerHTML = last_response_timestamp.toFixed(2) + ' s ago';
     }
 };
 
@@ -117,7 +117,7 @@ let update_joystick_status = function() {
     let joystick_direction_right = state['joystick_direction_right'];
 
     /* Update joystick status element */
-    let joystick_status_element = document.getElementById('joystick-status');
+    let joystick_status_element = document.getElementById('drivetrain-joystick-status');
     if (joystick_status == null ||  joystick_status == undefined) {
         joystick_status_element.innerHTML = 'N/A';
     } else if (joystick_status == 'uninitialized') {
@@ -138,28 +138,28 @@ let update_joystick_status = function() {
     }
 
     /* Update joystick speeds and direction */
-    let joystick_speed_left_element = document.getElementById('joystick-speed-left');
+    let joystick_speed_left_element = document.getElementById('drivetrain-joystick-speed-left');
     if (joystick_speed_left == null) {
         joystick_speed_left_element.innerHTML = 'N/A';
     } else {
         joystick_speed_left_element.innerHTML = joystick_speed_left;
     }
 
-    let joystick_speed_right_element = document.getElementById('joystick-speed-right');
+    let joystick_speed_right_element = document.getElementById('drivetrain-joystick-speed-right');
     if (joystick_speed_right == null) {
         joystick_speed_right_element.innerHTML = 'N/A';
     } else {
         joystick_speed_right_element.innerHTML = joystick_speed_right;
     }
 
-    let joystick_direction_left_element = document.getElementById('joystick-direction-left');
+    let joystick_direction_left_element = document.getElementById('drivetrain-joystick-direction-left');
     if (joystick_direction_left == null) {
         joystick_direction_left_element.innerHTML = 'N/A';
     } else {
         joystick_direction_left_element.innerHTML = joystick_direction_left;
     }
 
-    let joystick_direction_right_element = document.getElementById('joystick-direction-right');
+    let joystick_direction_right_element = document.getElementById('drivetrain-joystick-direction-right');
     if (joystick_direction_right == null) {
         joystick_direction_right_element.innerHTML = 'N/A';
     } else {
@@ -167,7 +167,7 @@ let update_joystick_status = function() {
     }
 
     /* Update joystick initialize button */
-    let joystick_initialize_button_element = document.getElementById('joystick-initialize-btn'); 
+    let joystick_initialize_button_element = document.getElementById('drivetrain-joystick-initialize-btn'); 
     if (joystick_status == 'uninitialized' || joystick_status == 'not found') {
         joystick_initialize_button_element.className = 'btn btn-primary';
     } else {
@@ -175,8 +175,8 @@ let update_joystick_status = function() {
     }
 
     /* Update joystick teardown button */
-    let joystick_teardown_button_element = document.getElementById('joystick-teardown-btn');
-    if (joystick_status == 'initialized')  {
+    let joystick_teardown_button_element = document.getElementById('drivetrain-joystick-teardown-btn');
+    if (joystick_status == 'initialized') {
         joystick_teardown_button_element.className = 'btn btn-danger';
     } else {
         joystick_teardown_button_element.className = 'btn btn-danger disabled';
@@ -234,11 +234,11 @@ document.getElementById('conn-manager-disconnect-btn').addEventListener('click',
 });
 
 /* Event listener for user clicking joystick initialize button */
-document.getElementById('joystick-initialize-btn').addEventListener('click', function() {
+document.getElementById('drivetrain-joystick-initialize-btn').addEventListener('click', function() {
     const fetch_promise = fetch('/api/joystick/initialize');
 });
 
 /* Event listener for user clicking joystick teardown button */
-document.getElementById('joystick-teardown-btn').addEventListener('click', function() {
+document.getElementById('drivetrain-joystick-teardown-btn').addEventListener('click', function() {
     const fetch_promise = fetch('/api/joystick/teardown');
 });
