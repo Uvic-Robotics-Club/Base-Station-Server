@@ -13,6 +13,14 @@ def index():
     '''
     return render_template('index.html')
 
+@bp.route('/settings', methods=['GET'])
+def settings():
+    '''
+    The settings page of the application which contains configuration
+    options for the base station and the rover.
+    '''
+    return render_template('settings.html')
+
 @bp.route('/get_state', methods=['GET'])
 def get_state():
     '''

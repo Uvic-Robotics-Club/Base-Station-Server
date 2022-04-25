@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-# This program will read the x and y axis data from a USB connected joystick and
-# convert that data into left/right speed values for the runt rover. 
-# This program then processes the left/right speed values and increments or decrements 
-# them accordingly. Reads happen at specified intervals, and are then sent as commands
-# to the rover.
 # this is a note from antons wife to say she loves him <3 
 import exceptions
 import pygame
 import requests
 from state import State
+import threading
 import time
 from client import send_command
 
@@ -24,49 +20,36 @@ PERCENTAGE_VARIANCE = 0.05
 
 state = State()
 
-class Joystick():
+class ArmJoystick():
+    def __init__(self, device_index, thread_termination_event):
+        # TODO: To implement for sending arm data to the rover
+        pass
 
-    @staticmethod
-    def control_drivetrain():
-        pygame.init()
+class DriveTrainJoystick():
+    def __init__(self, device_index, thread_termination_event):
+        self.joystick = pygame.joystick.Joystick(device_index)
+        self.joystick.init()
+        self.thread_termination_event = thread_termination_event
+        
+        # Update drive train joystick state so feedback in UI shows joystick is working
+        state.set_attribute('drivetrain_joystick_status', 'initialized')
+        self.capture_input_and_send_command()
 
-        # Initialize joystick
-        try:
-            joystick = pygame.joystick.Joystick(0)
-            joystick.init()
-        except pygame.error:
-            state.set_attribute('joystick_status', 'not found')
-            #print('Cannot find joystick. Not running joystick.')
-            return
-        state.set_attribute('joystick_status', 'initialized')
-
-        while (pygame.joystick.get_count() > 0) and (state.get_attribute('joystick_status') != 'tearing down'):
+    def capture_input_and_send_command(self):
+        while not self.thread_termination_event.is_set():
             # Retrieve joystick data
             # X and Y axis range [-100.0, 100.0], where negative is reverse.
             pygame.event.get()
 
-            x_axis = joystick.get_axis(0) * MAX_VAL
-            y_axis = (-joystick.get_axis(1)) * MAX_VAL
+            x_axis = self.joystick.get_axis(0) * MAX_VAL
+            y_axis = (-self.joystick.get_axis(1)) * MAX_VAL
 
             # Set initial speed before considering turning
             speedLeft = speedRight = y_axis
 
-            # TODO: This is for testing. Remove for production
-            # Prints all axis values such that different profiles can be created for different joysticks.
-            # num_axes = joystick.get_numaxes()
-            # print('Num axes: ', num_axes)
-            # for i in range(num_axes):
-            #    print('Axis {}: {}'.format(i, joystick.get_axis(i)))
-            # print('==============')
-
             # If x_axis and y_axis are both within the deadzone, assume joystick is centered.
             if abs(x_axis) < X_AXIS_DEADZONE and abs(y_axis) < Y_AXIS_DEADZONE:
                 pass
-                # Joystick is centred
-                #if abs(z_axis) > Z_AXIS_DEADZONE:
-                #    # Rotate rover in place
-                #    speedLeft += z_axis
-                #    speedRight -= z_axis
             else:
                 # Joystick is not centred
                 if x_axis != 0:
@@ -77,7 +60,6 @@ class Joystick():
             # Arduino expects ints
             speed_left = int(speedLeft)
             speed_right = int(speedRight)
-
             speed_left_setpoint = 0
             speed_right_setpoint = 0
 
@@ -108,13 +90,13 @@ class Joystick():
             else:
                 write_direction_right = 0
 
-            write_speed_left = int(Joystick.remap(abs(speed_left),0,100,0,255))
-            write_speed_right = int(Joystick.remap(abs(speed_right),0,100,0,255))
+            write_speed_left = int(self.remap(abs(speed_left),0,100,0,255))
+            write_speed_right = int(self.remap(abs(speed_right),0,100,0,255))
 
-            state.set_attribute('joystick_speed_left', write_speed_left)
-            state.set_attribute('joystick_speed_right', write_speed_right)
-            state.set_attribute('joystick_direction_left', write_direction_left)
-            state.set_attribute('joystick_direction_right', write_direction_right)
+            state.set_attribute('drivetrain_joystick_speed_left', write_speed_left)
+            state.set_attribute('drivetrain_joystick_speed_right', write_speed_right)
+            state.set_attribute('drivetrain_joystick_direction_left', write_direction_left)
+            state.set_attribute('drivetrain_joystick_direction_right', write_direction_right)
 
             # Build command and send.
             command = {
@@ -126,7 +108,7 @@ class Joystick():
             }
 
             try:
-                #print(command)
+                print(command)
                 send_command(command)
             except exceptions.NoConnectionException:
                 print('No connection, cannot send joystick position...')
@@ -140,11 +122,11 @@ class Joystick():
 
             time.sleep(SLEEP_DURATION_SEC)
 
-        state.set_attribute('joystick_speed_left', None)
-        state.set_attribute('joystick_speed_right', None)
-        state.set_attribute('joystick_direction_left', None)
-        state.set_attribute('joystick_direction_right', None)
-        print('Finishing joystick thread.')
+        # Update state attributes so that UI can be updated with most recent joystick input.
+        state.set_attribute('drivetrain_joystick_speed_left', None)
+        state.set_attribute('drivetrain_joystick_speed_right', None)
+        state.set_attribute('drivetrain_joystick_direction_left', None)
+        state.set_attribute('drivetrain_joystick_direction_right', None)
 
     @staticmethod
     def remap(old_value, old_min, old_max, new_min, new_max):
@@ -177,5 +159,127 @@ class Joystick():
         one_side_range = (max_val - min_val) * percentage
         return abs(actual_val - center_val) <= one_side_range
 
-if __name__ == '__main__':
-    Joystick.control_drivetrain()
+class Joystick():
+    '''
+    This class manages all the connected joysticks to the machine, including returning
+    information about the joysticks, capturing input, and managing profiles
+    '''
+
+    def __init__(self):
+        pygame.init()
+        self.connected_joysticks = {}
+
+        self.arm_joystick_thread = None
+        self.arm_joystick_thread_event = None
+        self.arm_joystick_assigned_index = None # pygame device index of arm joystick
+        self.arm_joystick_assigned_name = None # pygame name of arm joystick
+
+        self.drivetrain_joystick_thread = None
+        self.drivetrain_joystick_thread_event = None
+        self.drivetrain_joystick_assigned_index = None # pygame device index of drivetrain joystick
+        self.drivetrain_joystick_assigned_name = None # pygame name of drivetrain joystick
+
+    def get_connected_joysticks(self):
+        '''
+        Updates information related to all connected joysticks. Must
+        restart the joystick pygame module to detect any changes in connected
+        joysticks. Returns a dictionary with the joystick id and the name of the
+        joystick.
+        '''
+        self.connected_joysticks = {}
+
+        num_connected_joysticks = pygame.joystick.get_count()
+        for i in range(num_connected_joysticks):
+            joystick = pygame.joystick.Joystick(i)
+
+            # Boolean value indicating whether this joystick currently controls the arm
+            joystick_controls_arm = (self.arm_joystick_assigned_index == i) and (self.arm_joystick_assigned_name == joystick.get_name())
+
+            # Boolean value indicating whether this joystick currently controls the  drivetrain
+            joystick_controls_drivetrain = (self.drivetrain_joystick_assigned_index == i) and (self.drivetrain_joystick_assigned_name == joystick.get_name())
+
+            self.connected_joysticks[i] = {'name': joystick.get_name(), 'controls_arm': joystick_controls_arm, 'controls_drivetrain': joystick_controls_drivetrain}
+        return self.connected_joysticks.copy()
+
+    def start_arm_joystick(self, device_index, name):
+        '''
+        Starts a new thread for the joystick used to control the arm. The thread
+        manages the capture and sending of commands to the rover. Before starting 
+        thread, ensures that the device is still connected. The method takes the 
+        device index and name as input.
+        '''
+        assert type(device_index) == int
+        assert type(name) == str
+
+        # If joystick is already assigned, then do not continue.
+        if (self.arm_joystick_assigned_index is not None) or self.drivetrain_joystick_assigned_index == device_index:
+            raise exceptions.JoystickAssignedException
+
+        # If joystick has a different name than expected, then do not continue.
+        joystick_test_instance = pygame.joystick.Joystick(device_index)
+        if joystick_test_instance.get_name() != name:
+            raise exceptions.JoystickNameMismatchException
+
+        self.arm_joystick_assigned_index = device_index
+        self.arm_joystick_assigned_name = name
+        self.arm_joystick_thread_event = threading.Event()
+        self.arm_joystick_thread = threading.Thread(target=ArmJoystick, args=(device_index, self.arm_joystick_thread_event))
+        self.arm_joystick_thread.start()
+
+    def stop_arm_joystick(self):
+        '''
+        Stops the thread for the joystick used to control the arm.
+        '''
+
+        # If joystick is not assigned, then do not continue.
+        if self.arm_joystick_assigned_index is None:
+            raise exceptions.JoystickNotAssignedException
+
+        self.arm_joystick_thread_event.set()
+        self.arm_joystick_thread.join()
+        self.arm_joystick_assigned_index = None
+        self.arm_joystick_assigned_name = None
+        self.arm_joystick_thread = None
+
+    def start_drivetrain_joystick(self, device_index, name):
+        '''
+        Starts a new thread for the joystick used to control the drivetrain. The
+        thread manages the capture and sendingf of commands to the rover. Before starting
+        the thread, ensures that the device is still connected. THe method takes the
+        device index and name as input.
+        '''
+        assert type(device_index) == int
+        assert type(name) == str
+
+        # If joystick is already assigned, then do not continue.
+        if (self.drivetrain_joystick_assigned_index is not None) or self.arm_joystick_assigned_index == device_index:
+            raise exceptions.JoystickAssignedException
+
+        # If joystick has a different name than expected, then do not continue.
+        joystick_test_instance = pygame.joystick.Joystick(device_index)
+        if joystick_test_instance.get_name() != name:
+            raise exceptions.JoystickNameMismatchException
+
+        self.drivetrain_joystick_assigned_index = device_index
+        self.drivetrain_joystick_assigned_name = name
+        self.drivetrain_joystick_thread_event = threading.Event()
+        self.drivetrain_joystick_thread = threading.Thread(target=DriveTrainJoystick, args=(device_index, self.drivetrain_joystick_thread_event))
+        self.drivetrain_joystick_thread.start()
+
+    def stop_drivetrain_joystick(self):
+        '''
+        Stops the thread for the joystick used to control the drivetrain.
+        '''
+
+        # If joystick is not assigned, then do not continue.
+        print(self.drivetrain_joystick_assigned_index)
+        if self.drivetrain_joystick_assigned_index is None:
+            raise exceptions.JoystickNotAssignedException
+
+        self.drivetrain_joystick_thread_event.set()
+        self.drivetrain_joystick_thread.join()
+        self.drivetrain_joystick_assigned_index = None
+        self.drivetrain_joystick_assigned_name = None
+        self.drivetrain_joystick_thread = None
+
+        state.set_attribute('drivetrain_joystick_status', 'uninitialized')

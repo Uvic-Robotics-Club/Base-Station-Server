@@ -30,48 +30,12 @@
   <div class="container-fluid">
     <div class="row align-items-center">
       <div class="row">
-        <div class="col">
-          {% include "video.html" %}
-        </div>
-        <div class="col">
-          {% include "drivetrain.html" %}
-        </div>
-        <div class="col">
-          {% include "connection_status.html" %}
-        </div>
-      </div>
-    </div>
-    <div class="row align-items-center">
-      <div class="row">
-        <div class="col">
-          Row 2 Col 1
-        </div>
-        <div class="col">
-          {% include "arm.html" %}
-        </div>
-        <div class="col">
-          {% include "connection_manager.html" %}
-        </div>
-      </div>
-    </div>
-    <div class="row align-items-center">
-      <div class="row">
-        <div class="col">
-          Row 3 Col 1
-        </div>
-        <div class="col">
-          {% include "arm_controller.html" %}
-        </div>
-        <div class="col">
-          Row 3 Col 3
-        </div>
+          {% include "settings_joystick.html" %}
       </div>
     </div>
   </div>
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/connection_status.js') }}"></script>
-<script src="{{ url_for('static', filename='js/connection_manager.js') }}"></script>
-<script src="{{ url_for('static', filename='js/drivetrain.js') }}"></script>
-<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings_joystick.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>
 </html>

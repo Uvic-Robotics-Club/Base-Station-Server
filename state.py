@@ -27,12 +27,12 @@ class State(metaclass=Singleton):
             'connection_ping_status': None,
             'connection_ping_last_response': None,
             'hotspot_active': False,
-            'joystick_status': 'uninitialized',
-            'joystick_speed_left': None,
-            'joystick_speed_right': None,
-            'joystick_direction_left': None,
-            'joystick_direction_right': None,
-            'rover_telemetry': {}
+            'drivetrain_joystick_status': 'uninitialized',
+            'drivetrain_joystick_speed_left': None,
+            'drivetrain_joystick_speed_right': None,
+            'drivetrain_joystick_direction_left': None,
+            'drivetrain_joystick_direction_right': None,
+            'drivetrain_rover_telemetry': {}
         }
     
     def set_attribute(self, attribute_name, value):

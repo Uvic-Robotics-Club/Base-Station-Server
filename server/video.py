@@ -54,7 +54,7 @@ class VideoServer():
                 data += seg[1:]
             else:
                 # Ensures that we do not process part of an image
-                # when we first start the server.
+                # when we first start the server. 
                 if not process_frame:
                     process_frame = True
                     data = b''
