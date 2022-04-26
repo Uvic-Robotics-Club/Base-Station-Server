@@ -24,6 +24,7 @@ class Settings(metaclass=Singleton):
         # Acquire lock
         self.__lock.acquire()
 
+        # Change setting and also write to the settings file
         self.__settings[setting_name] = value
         with open(SETTINGS_FILE, 'w') as f:
             json.dump(self.__settings, f, indent=4, sort_keys=True)

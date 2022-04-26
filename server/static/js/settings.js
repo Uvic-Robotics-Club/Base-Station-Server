@@ -1,6 +1,8 @@
+let settings = {};
 let state = {};
 
-/* Fetch application state and update */
+/* Fetch application state and update.
+   Also fetch base station settings */
 let update_state = setInterval(function() {
     const fetch_promise = fetch('/ui/get_state');
     fetch_promise.then(response => {
@@ -10,5 +12,8 @@ let update_state = setInterval(function() {
         
         /* Update joystick component */
         update_joystick();
+
+        /* Update settings config values */
+        update_settings_config();
     });
-}, 2000);
+}, 1000);

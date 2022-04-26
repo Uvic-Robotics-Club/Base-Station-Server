@@ -18,16 +18,3 @@ let update_state = setInterval(function() {
         update_drivetrain_status();
     });
 }, 1000);
-
-/* Event listener for user clicking joystick initialize button */
-//document.getElementById('drivetrain-joystick-initialize-btn').addEventListener('click', function() {
-//    const fetch_promise = fetch('/api/joystick/initialize');
-//});
-
-/* Event listener for user clicking joystick teardown button */
-//document.getElementById('drivetrain-joystick-teardown-btn').addEventListener('click', function() {
-//    const fetch_promise = fetch('/api/joystick/teardown');
-//});
-
-/* Initialize joystick thread */
-// const initialize_joystick_fetch_promise = fetch('/api/joystick/initialize');

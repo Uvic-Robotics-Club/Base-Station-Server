@@ -9,11 +9,6 @@ let update_joystick = function() {
     fetch_promise.then(response => {
         return response.json();
     }).then(data => {
-        // If new response is different from last response, then a joystick may have been 
-        // connected or disconnected.
-        if (JSON.stringify(connected_joysticks) === JSON.stringify(data)) return;
-        connected_joysticks = data;
-
         // Clear table before populating with connected joysticks
         joystick_table_element.innerHTML = '';
         

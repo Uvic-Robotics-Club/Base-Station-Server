@@ -33,8 +33,14 @@
           {% include "settings_joystick.html" %}
       </div>
     </div>
+    <div class="row align-items-center">
+      <div class="row">
+          {% include "settings_config.html" %}
+      </div>
+    </div>
   </div>
 <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings_config.js') }}"></script>
 <script src="{{ url_for('static', filename='js/settings_joystick.js') }}"></script>
 <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>

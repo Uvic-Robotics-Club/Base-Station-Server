@@ -5,13 +5,11 @@ import exceptions
 from flask import Blueprint, request, Response
 import requests
 from server.video import VideoServer
-from settings import Settings
 from state import State
 
 
 bp = Blueprint('api/rover', __name__, url_prefix='/api/rover')
 state = State()
-settings = Settings()
 
 @bp.route('/connect', methods=['GET'])
 def connect():
@@ -35,7 +33,6 @@ def connect():
         rover_response = client.connect(
             remote_addr = args['remote_addr'],
             port = int(args['port'])
-            #port = settings.get_setting('port_rover_http')
         )
     except exceptions.NoConnectionException:
         response['status'] = 'failure'

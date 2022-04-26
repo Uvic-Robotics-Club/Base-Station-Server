@@ -69,7 +69,7 @@ def send_command(command):
 
     try:
         remote_addr = state.get_attribute('connection_remote_addr')
-        port = settings.get_setting('port_rover_http')
+        port = int(settings.get_setting('port_rover_http'))
         request_url = 'http://{}:{}/send_command'.format(remote_addr, port)
         response = requests.post(request_url, json=command, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
@@ -93,7 +93,7 @@ def get_telemetry():
 
     try:
         remote_addr = state.get_attribute('connection_remote_addr')
-        port = settings.get_setting('port_rover_http')
+        port = int(settings.get_setting('port_rover_http'))
         request_url = 'http://{}:{}/get_rover_telemetry'.format(remote_addr, port)
         response = requests.get(request_url, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
@@ -118,7 +118,7 @@ def ping():
 
     try:
         remote_addr = state.get_attribute('connection_remote_addr')
-        port = settings.get_setting('port_rover_http')
+        port = int(settings.get_setting('port_rover_http'))
         response = requests.get('http://{}:{}'.format(remote_addr, port), timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
     except requests.exceptions.ConnectionError as err:
@@ -149,7 +149,7 @@ def disconnect():
 
     try:
         remote_addr = state.get_attribute('connection_remote_addr')
-        port = settings.get_setting('port_rover_http')
+        port = int(settings.get_setting('port_rover_http'))
         request_url = 'http://{}:{}/disconnect'.format(remote_addr, port)
         response = requests.get(request_url, timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
