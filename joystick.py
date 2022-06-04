@@ -20,10 +20,104 @@ PERCENTAGE_VARIANCE = 0.05
 
 state = State()
 
-class ArmJoystick():
+# Utility method used by joystick and controller.
+def remap(old_value, old_min, old_max, new_min, new_max):
+    '''
+    Similar to map() in Arduino. Remaps value from an old range 
+    specified by old_min and old_max, to a new range between new_min
+    and new_max.
+    '''
+
+    old_range = old_max - old_min
+    if(old_range == 0):
+        new_value = new_min
+    else:
+        new_range = new_max - new_min
+        new_value = (((old_value - old_min) * new_range) / old_range) + new_min
+    return new_value
+
+class ArmController():
     def __init__(self, device_index, thread_termination_event):
-        # TODO: To implement for sending arm data to the rover
-        pass
+        self.joystick = pygame.joystick.Joystick(device_index)
+        self.joystick.init()
+        self.thread_termination_event = thread_termination_event
+
+        # Update arm controller state so feedback in UI shows controller is working
+        state.set_attribute('arm_controller_status', 'initialized')
+        self.capture_input_and_send_command()
+
+    def capture_input_and_send_command(self):
+        while not self.thread_termination_event.is_set():
+            pygame.event.get()
+
+            x_axis = self.joystick.get_axis(0)
+            y_axis = self.joystick.get_axis(1)
+            z_axis = self.joystick.get_axis(4)
+            gripper_close = self.joystick.get_axis(2)
+            gripper_open = self.joystick.get_axis(5)
+
+            # Adjust x_axis velocity so that if it is less than 0.2, then 
+            # it is in the deadzone
+            x_axis_velocity = x_axis
+            if abs(x_axis_velocity) < 0.2:
+                x_axis_velocity = 0
+
+            # Adjust y_axis velocity and set to 0 if values less than 0.2 (deadzone)
+            y_axis_velocity = -y_axis
+            if abs(y_axis_velocity) < 0.2:
+                y_axis_velocity = 0
+
+            # Adjust z_axis velocity and set to 0 if value less than 0.2 (deadzone)
+            z_axis_velocity = -z_axis
+            if abs(z_axis_velocity) < 0.2:
+                z_axis_velocity = 0
+
+            # Calculate gripper value such that LT & RT gripper movements are
+            # both taken into account.
+            # gripper_velocity 1.0 indicates open, -1.0 indicates close
+            gripper_close_velocity = remap(gripper_close, -1.0, 1.0, 0, 1.0)
+            gripper_open_velocity = remap(gripper_open, -1.0, 1.0, 0, 1.0)
+            gripper_velocity = gripper_open_velocity - gripper_close_velocity
+
+            # Update state attributes so that UI can be updated with most recent joystick input.
+            state.set_attribute('arm_controller_x_axis_velocity', x_axis_velocity)
+            state.set_attribute('arm_controller_y_axis_velocity', y_axis_velocity)
+            state.set_attribute('arm_controller_z_axis_velocity', z_axis_velocity)
+            state.set_attribute('arm_controller_gripper_velocity', gripper_velocity)
+            state.set_attribute('arm_controller_gripper_rotation_velocity', None)
+
+            # Build command and send
+            command = {
+                'type': 'ARM',
+                'x_axis_velocity': x_axis_velocity,
+                'y_axis_velocity': y_axis_velocity,
+                'z_axis_velocity': z_axis_velocity,
+                'gripper_velocity': gripper_velocity,
+                'gripper_rotation_velocity': 0
+            }
+
+            try:
+                print(command)
+                send_command(command)
+            except exceptions.NoConnectionException:
+                print('No connection, cannot send joystick position...')
+                pass
+            except requests.exceptions.Timeout:
+                print('Timed out on request to send drive train command...')
+                pass
+            except AssertionError:
+                print('Response code is not 200 OK')
+                pass
+
+            time.sleep(SLEEP_DURATION_SEC)
+
+        # Update state attributes so that UI can be updated with most recent joystick input.
+        state.set_attribute('arm_controller_x_axis_velocity', None)
+        state.set_attribute('arm_controller_y_axis_velocity', None)
+        state.set_attribute('arm_controller_z_axis_velocity', None)
+        state.set_attribute('arm_controller_gripper_velocity', None)
+        state.set_attribute('arm_controller_gripper_rotation_velocity', None)
+
 
 class DriveTrainJoystick():
     def __init__(self, device_index, thread_termination_event):
@@ -90,9 +184,10 @@ class DriveTrainJoystick():
             else:
                 write_direction_right = 0
 
-            write_speed_left = int(self.remap(abs(speed_left),0,100,0,255))
-            write_speed_right = int(self.remap(abs(speed_right),0,100,0,255))
+            write_speed_left = int(remap(abs(speed_left),0,100,0,255))
+            write_speed_right = int(remap(abs(speed_right),0,100,0,255))
 
+            # Update state attributes so that UI can be updated with most recent joystick input.
             state.set_attribute('drivetrain_joystick_speed_left', write_speed_left)
             state.set_attribute('drivetrain_joystick_speed_right', write_speed_right)
             state.set_attribute('drivetrain_joystick_direction_left', write_direction_left)
@@ -127,37 +222,6 @@ class DriveTrainJoystick():
         state.set_attribute('drivetrain_joystick_speed_right', None)
         state.set_attribute('drivetrain_joystick_direction_left', None)
         state.set_attribute('drivetrain_joystick_direction_right', None)
-
-    @staticmethod
-    def remap(old_value, old_min, old_max, new_min, new_max):
-        '''
-        Similar to map() in Arduino. Remaps value from an old range 
-        specified by old_min and old_max, to a new range between new_min
-        and new_max.
-        '''
-
-        old_range = old_max - old_min
-        if(old_range == 0):
-            new_value = new_min
-        else:
-            new_range = new_max - new_min
-            new_value = (((old_value - old_min) * new_range) / old_range) + new_min
-        return new_value
-
-    @staticmethod
-    def value_in_range(center_val, actual_val, min_val, max_val, percentage):
-        '''
-        Returns whether actual_val, a number, is within a percentage of center_val
-        as speciifed by min_val and max_val (a range).
-        '''
-        assert type(center_val) in [float, int]
-        assert type(actual_val) in [float, int]
-        assert type(min_val) in [float, int]
-        assert type(max_val) in [float, int]
-        assert type(percentage) == float
-
-        one_side_range = (max_val - min_val) * percentage
-        return abs(actual_val - center_val) <= one_side_range
 
 class Joystick():
     '''
@@ -223,7 +287,7 @@ class Joystick():
         self.arm_joystick_assigned_index = device_index
         self.arm_joystick_assigned_name = name
         self.arm_joystick_thread_event = threading.Event()
-        self.arm_joystick_thread = threading.Thread(target=ArmJoystick, args=(device_index, self.arm_joystick_thread_event))
+        self.arm_joystick_thread = threading.Thread(target=ArmController, args=(device_index, self.arm_joystick_thread_event))
         self.arm_joystick_thread.start()
 
     def stop_arm_joystick(self):

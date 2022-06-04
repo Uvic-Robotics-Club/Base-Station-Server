@@ -16,5 +16,8 @@ let update_state = setInterval(function() {
 
         /* Update joystick status */
         update_drivetrain_status();
+
+        /* Update GPS coordinates */
+        update_gps();
     });
 }, 1000);

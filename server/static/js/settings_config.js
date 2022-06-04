@@ -1,5 +1,7 @@
 current_settings = {};
 
+/* Maps name of settings returned from server to name that will be shown to the user. This
+   is for readability. */
 settings_name_mapping = {
     'port_base_station_udp_video': 'UDP Video Port',
     'timeout_ping_sec': 'Rover Ping Timeout (sec)',

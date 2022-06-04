@@ -60,7 +60,7 @@
           Row 3 Col 1
         </div>
         <div class="col">
-          Row 3 Col 2
+          {% include "gps.html" %}
         </div>
         <div class="col">
           Row 3 Col 3
@@ -72,6 +72,7 @@
 <script src="{{ url_for('static', filename='js/connection_status.js') }}"></script>
 <script src="{{ url_for('static', filename='js/connection_manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/drivetrain.js') }}"></script>
+<script src="{{ url_for('static', filename='js/gps.js') }}"></script>
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>

@@ -118,7 +118,7 @@ def ping():
 
     try:
         remote_addr = state.get_attribute('connection_remote_addr')
-        port = int(settings.get_setting('port_rover_http'))
+        port = int(state.get_attribute('connection_port'))
         response = requests.get('http://{}:{}'.format(remote_addr, port), timeout=REQUEST_TIMEOUT_SEC)
         assert response.status_code == 200
     except requests.exceptions.ConnectionError as err:

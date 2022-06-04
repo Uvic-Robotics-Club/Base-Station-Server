@@ -2,11 +2,29 @@
 <table class="table">
     <tbody>
       <tr>
-        <th scope="row">Base</th>
+        <th scope="row">X-Axis</th>
         <td>
-            <div class="btn-group" role="group" aria-label="base">
-                <button type="button" class="btn btn-primary" id="arm-base-anticlockwise">Left</button>
-                <button type="button" class="btn btn-primary" id="arm-base-clockwise">Right</button>
+            <div class="btn-group" role="group" aria-label="x-axis">
+                <button type="button" class="btn btn-primary" id="arm-x-left">Left (-)</button>
+                <button type="button" class="btn btn-primary" id="arm-x-right">Right (+)</button>
+            </div>
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Y-Axis</th>
+        <td>
+            <div class="btn-group" role="group" aria-label="y-axis">
+                <button type="button" class="btn btn-primary" id="arm-y-left">Back (-)</button>
+                <button type="button" class="btn btn-primary" id="arm-y-right">Forward (+)</button>
+            </div>
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Z-Axis</th>
+        <td>
+            <div class="btn-group" role="group" aria-label="z-axis">
+                <button type="button" class="btn btn-primary" id="arm-z-down">Down (-)</button>
+                <button type="button" class="btn btn-primary" id="arm-z-up">Up (+)</button>
             </div>
         </td>
       </tr>
@@ -14,8 +32,17 @@
         <th scope="row">Gripper</th>
         <td>
             <div class="btn-group" role="group" aria-label="gripper">
-                <button type="button" class="btn btn-primary" id="arm-gripper-open">Open</button>
-                <button type="button" class="btn btn-primary" id="arm-gripper-close">Close</button>
+                <button type="button" class="btn btn-primary" id="arm-gripper-close">Close (-)</button>
+                <button type="button" class="btn btn-primary" id="arm-gripper-open">Open (+)</button>
+            </div>
+        </td>
+      </tr>
+      <tr>
+        <th scope="row">Gripper Rotation</th>
+        <td>
+            <div class="btn-group" role="group" aria-label="gripper-rotation">
+                <button type="button" class="btn btn-primary" id="arm-gripper-rotation-anticlockwise">Anticlockwise (-)</button>
+                <button type="button" class="btn btn-primary" id="arm-gripper-rotation-clockwise">Clockwise (+)</button>
             </div>
         </td>
       </tr>

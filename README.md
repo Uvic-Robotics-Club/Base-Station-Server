@@ -9,10 +9,10 @@ This is the base station application that will be used to connect to the rover, 
 ### API Routes
 
 The following Flask API routes are used as follows:
-* `/api/hotspot`: Used by UI to control hotspot functionalities
-* `/api/joystick`: Used by UI to configure and manage connected joysticks (i.e. joystick for drivetrain and controller for arm)
-* `/api/rover`: Used by UI to connect to rover, send commands, ping, stream video, and other requests
-* `/connection`: Called by rover to connect, disconnect, ping, and send telemetry
+* `/api/hotspot`: Used by UI (the base station person) to control hotspot functionalities
+* `/api/joystick`: Used by UI (the base station person) to configure and manage connected joysticks (i.e. joystick for drivetrain and controller for arm)
+* `/api/rover`: Used by UI (the base station person) to connect to rover, send commands, ping, stream video, and other requests
+* `/connection`: Called by the rover to connect, disconnect, ping, and send telemetry
 * `/ui`: Called by the end user, accesses the User Interface of the base station
 
 ### Video

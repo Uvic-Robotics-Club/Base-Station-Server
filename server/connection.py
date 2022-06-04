@@ -53,7 +53,7 @@ def send_telemetry():
     and is stored in the "rover_telemetry" state. Current implementation overwrites all telemetry data from previous 
     request.
     '''
-    response = {'status': None}
+    response = {'status': -None}
 
     if not request.is_json:
         response['status'] = 'failure'
@@ -61,6 +61,7 @@ def send_telemetry():
         return response
 
     json_data = request.get_json()
+    print(json_data)
     state.set_attribute('rover_telemetry', json_data)
 
     response['status'] = 'success'
