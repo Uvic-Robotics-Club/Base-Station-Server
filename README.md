@@ -38,12 +38,14 @@ pip3 install -r requirements.txt
 
 Make sure you are in the root directory of the project. Run the following commands to start the base station server"
 
+Linux
 ```bash
 export FLASK_APP=server
 export FLASK_ENV=development
 flask run
 ```
 
+Windows
 ```powershell
 $env:FLASK_APP="server"
 $env:FLASK_ENV="development"
