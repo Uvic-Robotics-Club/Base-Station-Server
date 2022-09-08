@@ -43,4 +43,9 @@ export FLASK_APP=server
 export FLASK_ENV=development
 flask run
 ```
-
+```powershell
+$env:FLASK_APP="server"
+$env:FLASK_ENV="development"
+$env:FLASK_DEBUG=0
+flask run
+```
